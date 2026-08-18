@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import {
   BeritaAcaraItem,
   BeasiswaItem,
+  AttendanceRecord,
   INITIAL_BERITA_ACARA,
   INITIAL_INFO_BEASISWA,
+  INITIAL_ATTENDANCES,
 } from "@/data/portalData";
 
 const formatToIndonesianDate = (dateStr: string) => {
@@ -228,7 +230,7 @@ interface KipkDocument {
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState<"beranda" | "kegiatan" | "antrean_kip" | "berkas_kipk" | "berita_acara" | "info_beasiswa" | "pengguna" | "sertifikat" | "validasi_sertifikat" | "bobot">("beranda");
+  const [activeTab, setActiveTab] = useState<"beranda" | "kegiatan" | "antrean_kip" | "berkas_kipk" | "berita_acara" | "info_beasiswa" | "absensi_kegiatan" | "pengguna" | "sertifikat" | "validasi_sertifikat" | "bobot">("beranda");
 
   // State arrays
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -238,6 +240,17 @@ export default function AdminDashboard() {
   const [kipkDocs, setKipkDocs] = useState<KipkDocument[]>([]);
   const [beritaAcaraList, setBeritaAcaraList] = useState<BeritaAcaraItem[]>([]);
   const [beasiswaList, setBeasiswaList] = useState<BeasiswaItem[]>([]);
+  const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
+
+  // Attendance Management States (Admin)
+  const [attSearchQuery, setAttSearchQuery] = useState("");
+  const [attStatusFilter, setAttStatusFilter] = useState<"Semua" | "Hadir" | "Menunggu Verifikasi" | "Ditolak">("Semua");
+  const [attActivityFilter, setAttActivityFilter] = useState<string>("Semua");
+  const [selectedAttendanceForDetail, setSelectedAttendanceForDetail] = useState<AttendanceRecord | null>(null);
+  const [showAttendanceDetailModal, setShowAttendanceDetailModal] = useState(false);
+  const [showAdminProjectorQrModal, setShowAdminProjectorQrModal] = useState(false);
+  const [projectorActivity, setProjectorActivity] = useState<string>("Latihan Kepemimpinan Mahasiswa Berprestasi (LKMB)");
+  const [validationAdminNotes, setValidationAdminNotes] = useState<string>("");
 
   // Berita Acara Management States
   const [baSearchQuery, setBaSearchQuery] = useState("");
@@ -508,6 +521,20 @@ export default function AdminDashboard() {
       localStorage.setItem("semadiksi_info_beasiswa", JSON.stringify(INITIAL_INFO_BEASISWA));
     }
 
+    // Load Attendance / Presensi list
+    const storedAtt = localStorage.getItem("semadiksi_attendances");
+    if (storedAtt) {
+      try {
+        setAttendanceList(JSON.parse(storedAtt));
+      } catch (e) {
+        setAttendanceList(INITIAL_ATTENDANCES);
+        localStorage.setItem("semadiksi_attendances", JSON.stringify(INITIAL_ATTENDANCES));
+      }
+    } else {
+      setAttendanceList(INITIAL_ATTENDANCES);
+      localStorage.setItem("semadiksi_attendances", JSON.stringify(INITIAL_ATTENDANCES));
+    }
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "semadiksi_submissions") {
         if (e.newValue) {
@@ -534,6 +561,13 @@ export default function AdminDashboard() {
         if (e.newValue) {
           try {
             setBeasiswaList(JSON.parse(e.newValue));
+          } catch (err) { }
+        }
+      }
+      if (e.key === "semadiksi_attendances") {
+        if (e.newValue) {
+          try {
+            setAttendanceList(JSON.parse(e.newValue));
           } catch (err) { }
         }
       }
@@ -1509,6 +1543,107 @@ export default function AdminDashboard() {
     document.body.removeChild(link);
   };
 
+  // --- ATTENDANCE (PRESENSI KEGIATAN) LOGIC ---
+  const handleValidateAttendance = (
+    attId: string,
+    newStatus: "Hadir" | "Menunggu Verifikasi" | "Ditolak",
+    customNotes?: string
+  ) => {
+    const updated = attendanceList.map((att) => {
+      if (att.id === attId) {
+        return {
+          ...att,
+          status: newStatus,
+          notes: customNotes !== undefined ? customNotes : (newStatus === "Hadir" ? "Kehadiran diverifikasi sah oleh Admin." : "Bukti tidak sesuai / ditolak.")
+        };
+      }
+      return att;
+    });
+
+    setAttendanceList(updated);
+    localStorage.setItem("semadiksi_attendances", JSON.stringify(updated));
+    if (selectedAttendanceForDetail && selectedAttendanceForDetail.id === attId) {
+      setSelectedAttendanceForDetail({
+        ...selectedAttendanceForDetail,
+        status: newStatus,
+        notes: customNotes !== undefined ? customNotes : (newStatus === "Hadir" ? "Kehadiran diverifikasi sah oleh Admin." : "Bukti tidak sesuai / ditolak.")
+      });
+    }
+    alert(`Status presensi berhasil diubah menjadi "${newStatus}"!`);
+  };
+
+  const handleDeleteAttendance = (attId: string, studentName: string) => {
+    if (confirm(`Apakah Anda yakin ingin menghapus data presensi mahasiswa "${studentName}"?`)) {
+      const updated = attendanceList.filter((att) => att.id !== attId);
+      setAttendanceList(updated);
+      localStorage.setItem("semadiksi_attendances", JSON.stringify(updated));
+      alert("Data presensi berhasil dihapus.");
+    }
+  };
+
+  const openProjectorQrModal = (activityTitle?: string) => {
+    if (activityTitle) {
+      setProjectorActivity(activityTitle);
+    } else if (activities.length > 0) {
+      setProjectorActivity(activities[0].title);
+    }
+    setShowAdminProjectorQrModal(true);
+  };
+
+  const exportAttendanceToExcel = () => {
+    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<style>
+  table { border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 10pt; width: 100%; }
+  th { background-color: #1B6D24; color: #FFFFFF; font-weight: bold; text-align: center; padding: 8px; border: 1px solid #14521B; }
+  td { padding: 6px 10px; border: 1px solid #D0D0D0; }
+  .title-header { background-color: #E8F5E9; font-size: 13pt; font-weight: bold; color: #1B6D24; text-align: center; padding: 10px; }
+  .center { text-align: center; }
+</style>
+</head>
+<body>
+<table>
+  <tr><td colSpan="8" class="title-header">REKAPITULASI PRESENSI & KEHADIRAN MAHASISWA - SEMADIKSI UNUSA</td></tr>
+  <thead>
+    <tr>
+      <th>NO</th>
+      <th>KODE PRESENSI</th>
+      <th>NAMA MAHASISWA</th>
+      <th>NIM</th>
+      <th>UNIVERSITAS</th>
+      <th>KEGIATAN</th>
+      <th>WAKTU PRESENSI</th>
+      <th>STATUS</th>
+    </tr>
+  </thead>
+  <tbody>`;
+    attendanceList.forEach((att, idx) => {
+      html += `
+    <tr>
+      <td class="center">${idx + 1}</td>
+      <td class="center"><b>${att.id}</b></td>
+      <td><b>${att.studentName}</b></td>
+      <td>'${att.studentNim}</td>
+      <td>${att.university}</td>
+      <td>${att.activityTitle}</td>
+      <td>${att.timestamp}</td>
+      <td class="center">${att.status}</td>
+    </tr>`;
+    });
+    html += `</tbody></table></body></html>`;
+
+    const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Rekap_Presensi_Mahasiswa_UNUSA_${new Date().toISOString().slice(0, 10)}.xls`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // --- CRUD KEGIATAN & SEATING LAYOUT LOGIC ---
   const syncLayoutWithQuota = (quotaValue: number = actQuota, preset: string = actSeatLayoutPreset) => {
     const layout = calculateOptimalLayoutForQuota(quotaValue, preset);
@@ -2446,6 +2581,7 @@ export default function AdminDashboard() {
               { id: "berkas_kipk", label: "Berkas KIP-K", icon: "folder_shared" },
               { id: "berita_acara", label: "Berita Acara", icon: "newspaper" },
               { id: "info_beasiswa", label: "Info Beasiswa", icon: "school" },
+              { id: "absensi_kegiatan", label: "Absensi Kegiatan", icon: "how_to_reg" },
               { id: "pengguna", label: "Kelola Pengguna", icon: "group_add" },
               { id: "sertifikat", label: "Upload Sertifikat", icon: "upload_file" },
               { id: "validasi_sertifikat", label: "Validasi Sertifikat", icon: "qr_code_scanner" },
@@ -2478,8 +2614,9 @@ export default function AdminDashboard() {
               { id: "kegiatan", label: "Kegiatan", icon: "event_note" },
               { id: "antrean_kip", label: "Antrean", icon: "assignment_turned_in" },
               { id: "berkas_kipk", label: "Berkas", icon: "folder_shared" },
-              { id: "berita_acara", label: "Berita Acara", icon: "newspaper" },
+              { id: "berita_acara", label: "Berita", icon: "newspaper" },
               { id: "info_beasiswa", label: "Beasiswa", icon: "school" },
+              { id: "absensi_kegiatan", label: "Absensi", icon: "how_to_reg" },
               { id: "pengguna", label: "Pengguna", icon: "group_add" },
               { id: "sertifikat", label: "Sertifikat", icon: "upload_file" },
               { id: "validasi_sertifikat", label: "Validasi", icon: "qr_code_scanner" },
@@ -4332,6 +4469,335 @@ export default function AdminDashboard() {
                                   onClick={() => handleDeleteBeasiswa(item.id, item.title)}
                                   className="p-1.5 hover:bg-error-container/20 text-error rounded-lg transition-colors cursor-pointer"
                                   title="Hapus Info Beasiswa"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      });
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2.8: ABSENSI KEGIATAN MAHASISWA */}
+          {activeTab === "absensi_kegiatan" && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Header & Main Actions */}
+              <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div>
+                  <h2 className="font-display text-2xl font-extrabold text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-3xl">how_to_reg</span>
+                    <span>Sistem Presensi & Absensi Kegiatan Mahasiswa</span>
+                  </h2>
+                  <p className="text-xs text-on-surface-variant mt-1">
+                    Pantau data kehadiran mahasiswa secara real-time, verifikasi foto bukti keikutsertaan kegiatan (selfie/screenshot Zoom), dan kelola QR Code presensi.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => openProjectorQrModal()}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary text-on-primary hover:brightness-110 rounded-xl font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
+                    <span>Layar QR Code Proyektor</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={exportAttendanceToExcel}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-green-700 hover:bg-green-800 text-white text-xs font-bold rounded-xl shadow transition-all active:scale-95 cursor-pointer"
+                    title="Ekspor Rekapitulasi Presensi ke file Excel (.xls)"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">download</span>
+                    <span>Ekspor Excel (.xls)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Statistics Overview Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <span className="material-symbols-outlined text-2xl">groups</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-outline uppercase tracking-wider">Total Presensi</p>
+                    <h3 className="text-lg font-black text-on-surface mt-0.5">{attendanceList.length} Mahasiswa</h3>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
+                    <span className="material-symbols-outlined text-2xl">check_circle</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-outline uppercase tracking-wider">Hadir Sah</p>
+                    <h3 className="text-lg font-black text-emerald-600 mt-0.5">
+                      {attendanceList.filter(a => a.status === "Hadir").length} Terverifikasi
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
+                    <span className="material-symbols-outlined text-2xl">pending</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-outline uppercase tracking-wider">Menunggu Review</p>
+                    <h3 className="text-lg font-black text-amber-600 mt-0.5">
+                      {attendanceList.filter(a => a.status === "Menunggu Verifikasi").length} Peserta
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center text-error shrink-0">
+                    <span className="material-symbols-outlined text-2xl">cancel</span>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-outline uppercase tracking-wider">Ditolak</p>
+                    <h3 className="text-lg font-black text-error mt-0.5">
+                      {attendanceList.filter(a => a.status === "Ditolak").length} Berkas
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters & Search Toolbar */}
+              <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
+                <div className="relative flex-1">
+                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+                    search
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Cari nama mahasiswa, NIM, universitas, atau kegiatan..."
+                    value={attSearchQuery}
+                    onChange={(e) => setAttSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-surface-container border border-surface-variant/20 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-xs font-semibold text-on-surface"
+                  />
+                  {attSearchQuery && (
+                    <button
+                      onClick={() => setAttSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">close</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={attActivityFilter}
+                    onChange={(e) => setAttActivityFilter(e.target.value)}
+                    className="px-3 py-2.5 bg-surface-container border border-surface-variant/20 rounded-xl text-xs font-bold text-on-surface outline-none cursor-pointer max-w-[220px]"
+                  >
+                    <option value="Semua">🎯 Semua Kegiatan</option>
+                    {Array.from(new Set(attendanceList.map(a => a.activityTitle))).map((title) => (
+                      <option key={title} value={title}>{title}</option>
+                    ))}
+                  </select>
+
+                  <div className="flex gap-1 bg-surface-container p-1 rounded-xl text-xs font-bold">
+                    {(["Semua", "Hadir", "Menunggu Verifikasi", "Ditolak"] as const).map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setAttStatusFilter(st)}
+                        className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer text-[11px] ${
+                          attStatusFilter === st
+                            ? "bg-primary text-white shadow-sm font-bold"
+                            : "text-on-surface-variant hover:bg-surface-variant/20"
+                        }`}
+                      >
+                        {st === "Hadir" ? "✅ Hadir" : st === "Menunggu Verifikasi" ? "🟡 Pending" : st === "Ditolak" ? "🔴 Tolak" : "Semua"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Table of Attendance Records */}
+              <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-surface-container-low border-b border-surface-variant/30 text-on-surface-variant font-bold text-xs uppercase">
+                      <th className="p-4 w-12 text-center">No</th>
+                      <th className="p-4 w-64">Mahasiswa & Asal Kampus</th>
+                      <th className="p-4">Kegiatan Yang Diikuti</th>
+                      <th className="p-4 w-44">Bukti Kehadiran (Foto)</th>
+                      <th className="p-4 w-44">Waktu & Lokasi Presensi</th>
+                      <th className="p-4 w-36 text-center">Status</th>
+                      <th className="p-4 w-36 text-center">Aksi Validasi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-variant/20 text-xs">
+                    {(() => {
+                      const filtered = attendanceList.filter((item) => {
+                        if (attStatusFilter !== "Semua" && item.status !== attStatusFilter) return false;
+                        if (attActivityFilter !== "Semua" && item.activityTitle !== attActivityFilter) return false;
+                        if (attSearchQuery.trim() !== "") {
+                          const q = attSearchQuery.toLowerCase();
+                          return (
+                            item.studentName.toLowerCase().includes(q) ||
+                            item.studentNim.toLowerCase().includes(q) ||
+                            item.university.toLowerCase().includes(q) ||
+                            item.activityTitle.toLowerCase().includes(q)
+                          );
+                        }
+                        return true;
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={7} className="text-center py-12 text-outline">
+                              <span className="material-symbols-outlined text-4xl block mb-2 text-outline/40">how_to_reg</span>
+                              <p className="font-bold text-sm text-on-surface">Tidak ada data presensi yang cocok dengan filter atau pencarian.</p>
+                              <p className="text-xs text-outline mt-0.5">Buka "Layar QR Code Proyektor" untuk mengajak mahasiswa melakukan absensi.</p>
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return filtered.map((item, idx) => {
+                        const isHadir = item.status === "Hadir";
+                        const isPending = item.status === "Menunggu Verifikasi";
+
+                        return (
+                          <tr key={item.id} className="hover:bg-surface-container-low/40 transition-colors">
+                            <td className="p-4 text-center font-bold text-outline">{idx + 1}</td>
+
+                            {/* Student Profile */}
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-primary text-on-primary flex items-center justify-center font-black text-sm shadow-sm shrink-0">
+                                  {item.studentName.charAt(0)}
+                                </div>
+                                <div className="space-y-0.5 min-w-0">
+                                  <p className="font-bold text-on-surface text-sm truncate">{item.studentName}</p>
+                                  <p className="text-[11px] text-on-surface-variant font-mono">
+                                    NIM: <strong className="text-primary">{item.studentNim}</strong>
+                                  </p>
+                                  <p className="text-[10px] text-outline truncate font-semibold">{item.university}</p>
+                                  {item.studentPhone && <p className="text-[9px] text-outline">WA: {item.studentPhone}</p>}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Activity */}
+                            <td className="p-4">
+                              <div className="space-y-1">
+                                <span className="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 rounded-md text-[10px] font-bold">
+                                  {item.activityCategory || "Kegiatan KIP-K"}
+                                </span>
+                                <p className="font-bold text-on-surface text-xs leading-snug">{item.activityTitle}</p>
+                                {item.notes && <p className="text-[10px] text-outline italic">Catatan: {item.notes}</p>}
+                              </div>
+                            </td>
+
+                            {/* Proof Image with 1-click preview */}
+                            <td className="p-4">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedAttendanceForDetail(item);
+                                  setValidationAdminNotes(item.notes || "");
+                                  setShowAttendanceDetailModal(true);
+                                }}
+                                className="flex items-center gap-2 p-1.5 bg-surface hover:bg-surface-container rounded-xl border border-surface-variant/20 text-left transition-all cursor-pointer group"
+                                title="Klik untuk memperbesar foto bukti kehadiran"
+                              >
+                                <div className="w-12 h-12 rounded-lg overflow-hidden border border-surface-variant/30 bg-surface-container shrink-0">
+                                  <img src={item.proofImageUrl} alt="Bukti" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold text-primary group-hover:underline truncate max-w-[100px]">
+                                    {item.proofFileName || "Foto_Bukti.jpg"}
+                                  </p>
+                                  <p className="text-[9px] text-outline flex items-center gap-0.5">
+                                    <span className="material-symbols-outlined text-[12px]">zoom_in</span>
+                                    <span>Zoom Bukti</span>
+                                  </p>
+                                </div>
+                              </button>
+                            </td>
+
+                            {/* Timestamp & Location */}
+                            <td className="p-4 text-[11px] text-on-surface-variant">
+                              <p className="font-bold text-on-surface">{item.timestamp}</p>
+                              <p className="text-[10px] text-outline flex items-center gap-1 mt-0.5">
+                                <span className="material-symbols-outlined text-[12px]">pin_drop</span>
+                                <span className="truncate max-w-[130px]">{item.locationName || "Kampus B UNUSA"}</span>
+                              </p>
+                              <p className="text-[9px] text-outline/80">{item.deviceInfo}</p>
+                            </td>
+
+                            {/* Status */}
+                            <td className="p-4 text-center">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                                isHadir
+                                  ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20"
+                                  : isPending
+                                    ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
+                                    : "bg-error/10 text-error border-error/20"
+                              }`}>
+                                <span className="material-symbols-outlined text-[12px]">
+                                  {isHadir ? "check_circle" : isPending ? "pending" : "cancel"}
+                                </span>
+                                <span>{item.status}</span>
+                              </span>
+                            </td>
+
+                            {/* Validation Actions */}
+                            <td className="p-4 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedAttendanceForDetail(item);
+                                    setValidationAdminNotes(item.notes || "");
+                                    setShowAttendanceDetailModal(true);
+                                  }}
+                                  className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-colors cursor-pointer"
+                                  title="Buka Pratinjau & Validasi Lengkap"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">visibility</span>
+                                </button>
+
+                                {!isHadir && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleValidateAttendance(item.id, "Hadir")}
+                                    className="p-1.5 hover:bg-emerald-500/20 text-emerald-700 rounded-lg transition-colors cursor-pointer"
+                                    title="Setujui Kehadiran (Hadir)"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                  </button>
+                                )}
+
+                                {isHadir && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleValidateAttendance(item.id, "Ditolak")}
+                                    className="p-1.5 hover:bg-amber-500/20 text-amber-700 rounded-lg transition-colors cursor-pointer"
+                                    title="Tolak Bukti Kehadiran"
+                                  >
+                                    <span className="material-symbols-outlined text-[16px]">cancel</span>
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteAttendance(item.id, item.studentName)}
+                                  className="p-1.5 hover:bg-error-container/20 text-error rounded-lg transition-colors cursor-pointer"
+                                  title="Hapus Data Presensi"
                                 >
                                   <span className="material-symbols-outlined text-[16px]">delete</span>
                                 </button>
@@ -7486,6 +7952,319 @@ export default function AdminDashboard() {
               >
                 Tutup
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LAYAR PROYEKTOR QR CODE ABSENSI KEGIATAN (ADMIN) */}
+      {showAdminProjectorQrModal && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 md:p-8 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-stone-900 border-2 border-emerald-500/50 rounded-3xl w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl relative text-white flex flex-col p-6 md:p-10">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-stone-800">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                  <span className="material-symbols-outlined text-3xl">qr_code_scanner</span>
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-xl md:text-2xl text-emerald-400 tracking-tight">
+                    Layar QR Code Presensi Kegiatan
+                  </h3>
+                  <p className="text-xs text-stone-400">
+                    Tampilkan layar ini di proyektor auditorium untuk dipindai oleh peserta acara.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAdminProjectorQrModal(false)}
+                className="w-10 h-10 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-300 flex items-center justify-center cursor-pointer transition-colors shrink-0"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Content: Activity Selector & Big Projector QR */}
+            <div className="py-6 space-y-6 text-center">
+              {/* Activity Selector */}
+              <div className="max-w-xl mx-auto space-y-2">
+                <label className="text-xs font-bold text-emerald-300 uppercase tracking-wider block">
+                  Pilih Kegiatan yang Sedang Berlangsung:
+                </label>
+                <select
+                  value={projectorActivity}
+                  onChange={(e) => setProjectorActivity(e.target.value)}
+                  className="w-full p-3.5 bg-stone-800 border-2 border-emerald-500/40 focus:border-emerald-400 rounded-2xl text-xs md:text-sm font-bold text-white outline-none cursor-pointer text-center"
+                >
+                  {activities.map((act) => (
+                    <option key={act.id} value={act.title} className="bg-stone-900 text-white">
+                      {act.title}
+                    </option>
+                  ))}
+                  {beritaAcaraList.map((ba) => (
+                    <option key={ba.id} value={ba.title} className="bg-stone-900 text-white">
+                      {ba.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Big High-Contrast QR Code Card */}
+              <div className="bg-white text-stone-900 p-8 rounded-3xl max-w-sm mx-auto shadow-2xl space-y-4 border-4 border-emerald-400">
+                <div className="space-y-1 border-b border-stone-200 pb-3">
+                  <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    SCAN UNTUK ABSEN
+                  </span>
+                  <h4 className="font-extrabold text-sm text-stone-900 line-clamp-2 leading-tight">
+                    {projectorActivity}
+                  </h4>
+                </div>
+
+                {/* Simulated High-Res Vector QR Matrix */}
+                <div className="flex flex-col items-center justify-center p-3 bg-neutral-50 rounded-2xl border border-stone-300">
+                  {(() => {
+                    const size = 25;
+                    const cells = [];
+                    const getLocator = (r: number, c: number, rS: number, cS: number) => {
+                      if (r >= rS && r < rS + 7 && c >= cS && c < cS + 7) {
+                        const dr = r - rS;
+                        const dc = c - cS;
+                        if (dr === 0 || dr === 6 || dc === 0 || dc === 6) return "bg-black";
+                        if (dr === 1 || dr === 5 || dc === 1 || dc === 5) return "bg-white";
+                        return "bg-black";
+                      }
+                      return null;
+                    };
+
+                    for (let r = 0; r < size; r++) {
+                      for (let c = 0; c < size; c++) {
+                        const tl = getLocator(r, c, 0, 0);
+                        if (tl) { cells.push(tl); continue; }
+                        const tr = getLocator(r, c, 0, size - 7);
+                        if (tr) { cells.push(tr); continue; }
+                        const bl = getLocator(r, c, size - 7, 0);
+                        if (bl) { cells.push(bl); continue; }
+
+                        const seed = (r * 31 + c * 17 + projectorActivity.length * 7);
+                        cells.push(seed % 3 === 0 || seed % 5 === 0 ? "bg-black" : "bg-white");
+                      }
+                    }
+
+                    return (
+                      <div
+                        style={{ display: "grid", gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
+                        className="gap-[0.5px] w-48 h-48 bg-white p-1"
+                      >
+                        {cells.map((cls, idx) => (
+                          <div key={idx} className={`w-full h-full ${cls}`} />
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-[10px] text-stone-500 font-semibold">
+                    Arahkan kamera HP ke QR Code di atas
+                  </p>
+                  <p className="font-mono text-[9px] text-emerald-800 font-bold bg-emerald-50 py-1 px-2 rounded-lg truncate">
+                    /absensi?kegiatan={encodeURIComponent(projectorActivity.slice(0, 20))}...
+                  </p>
+                </div>
+              </div>
+
+              {/* Real-time stats for this activity */}
+              <div className="flex flex-wrap justify-center items-center gap-4 text-xs">
+                <div className="px-4 py-2 bg-stone-800 rounded-xl border border-stone-700 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span>Peserta Telah Presensi: </span>
+                  <strong className="text-emerald-400 font-bold text-sm">
+                    {attendanceList.filter(a => a.activityTitle === projectorActivity).length} Orang
+                  </strong>
+                </div>
+
+                <a
+                  href={`/absensi?kegiatan=${encodeURIComponent(projectorActivity)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  <span>Buka Form Absensi Mahasiswa</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-between items-center pt-4 border-t border-stone-800">
+              <span className="text-[11px] text-stone-500">
+                Sistem E-Presensi Mandiri SEMADIKSI UNUSA • Real-Time Database Sync
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setShowAdminProjectorQrModal(false)}
+                className="px-6 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl font-bold text-xs cursor-pointer transition-all"
+              >
+                Tutup Layar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DETAIL BUKTI & VALIDASI PRESENSI MAHASISWA (ADMIN) */}
+      {showAttendanceDetailModal && selectedAttendanceForDetail && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 transition-opacity duration-300">
+          <div className="bg-surface-container-lowest rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl relative flex flex-col p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-surface-variant/30 mb-5">
+              <div className="flex items-center gap-2.5">
+                <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                  <span className="material-symbols-outlined text-2xl">verified</span>
+                </span>
+                <div>
+                  <h3 className="font-bold text-lg text-on-surface">Validasi Bukti Kehadiran Mahasiswa</h3>
+                  <p className="text-xs text-on-surface-variant">ID Presensi: {selectedAttendanceForDetail.id}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAttendanceDetailModal(false);
+                  setSelectedAttendanceForDetail(null);
+                }}
+                className="w-10 h-10 rounded-full bg-surface-container hover:bg-surface-variant/30 flex items-center justify-center cursor-pointer transition-colors"
+              >
+                <span className="material-symbols-outlined text-on-surface-variant">close</span>
+              </button>
+            </div>
+
+            <div className="space-y-6 text-xs">
+              {/* Evidence Photo Preview */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-on-surface text-xs uppercase tracking-wider flex items-center gap-1">
+                    <span className="material-symbols-outlined text-primary text-[16px]">photo_camera</span>
+                    <span>Foto Bukti Mengikuti Kegiatan</span>
+                  </span>
+                  <span className="text-[10px] text-outline">{selectedAttendanceForDetail.proofFileName}</span>
+                </div>
+
+                <div className="w-full h-64 md:h-80 rounded-2xl overflow-hidden border-2 border-surface-variant/30 bg-surface-container relative shadow-inner">
+                  <img
+                    src={selectedAttendanceForDetail.proofImageUrl}
+                    alt="Bukti Kehadiran"
+                    className="w-full h-full object-contain bg-black/5"
+                  />
+                </div>
+              </div>
+
+              {/* Metadata Grid */}
+              <div className="bg-surface-container-low border border-surface-variant/20 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <div>
+                  <span className="text-outline text-[10px] block">Nama Mahasiswa:</span>
+                  <strong className="text-on-surface text-sm">{selectedAttendanceForDetail.studentName}</strong>
+                </div>
+
+                <div>
+                  <span className="text-outline text-[10px] block">NIM:</span>
+                  <span className="font-mono font-bold text-primary text-sm">{selectedAttendanceForDetail.studentNim}</span>
+                </div>
+
+                <div>
+                  <span className="text-outline text-[10px] block">Asal Perguruan Tinggi:</span>
+                  <strong className="text-on-surface">{selectedAttendanceForDetail.university}</strong>
+                </div>
+
+                <div>
+                  <span className="text-outline text-[10px] block">Kontak / Email:</span>
+                  <span className="text-on-surface-variant font-medium">
+                    {selectedAttendanceForDetail.studentPhone || "-"} • {selectedAttendanceForDetail.studentEmail || "-"}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-outline text-[10px] block">Nama Kegiatan:</span>
+                  <strong className="text-primary">{selectedAttendanceForDetail.activityTitle}</strong>
+                </div>
+
+                <div>
+                  <span className="text-outline text-[10px] block">Waktu Presensi & Tanggal:</span>
+                  <span className="text-on-surface font-semibold">{selectedAttendanceForDetail.timestamp}</span>
+                </div>
+
+                <div>
+                  <span className="text-outline text-[10px] block">Lokasi GPS:</span>
+                  <span className="text-on-surface font-medium">{selectedAttendanceForDetail.locationName || "Kampus B UNUSA"}</span>
+                </div>
+
+                <div>
+                  <span className="text-outline text-[10px] block">Status Saat Ini:</span>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[10px] mt-0.5 ${
+                    selectedAttendanceForDetail.status === "Hadir"
+                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                      : selectedAttendanceForDetail.status === "Menunggu Verifikasi"
+                        ? "bg-amber-100 text-amber-800 border border-amber-300"
+                        : "bg-error/10 text-error border border-error/20"
+                  }`}>
+                    {selectedAttendanceForDetail.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Admin Validation Notes */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-on-surface-variant block">Catatan Verifikasi Admin</label>
+                <textarea
+                  rows={2}
+                  value={validationAdminNotes}
+                  onChange={(e) => setValidationAdminNotes(e.target.value)}
+                  placeholder="Contoh: Bukti foto selfie di auditorium terverifikasi sah."
+                  className="w-full p-3 bg-surface-container border border-surface-variant/20 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-xs text-on-surface"
+                />
+              </div>
+
+              {/* Decision Actions */}
+              <div className="flex flex-wrap gap-2.5 pt-4 border-t border-surface-variant/30 justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleValidateAttendance(selectedAttendanceForDetail.id, "Ditolak", validationAdminNotes);
+                    setShowAttendanceDetailModal(false);
+                  }}
+                  className="px-4 py-2.5 bg-error/10 hover:bg-error/20 text-error rounded-xl font-bold text-xs cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">cancel</span>
+                  <span>Tolak Bukti</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleValidateAttendance(selectedAttendanceForDetail.id, "Menunggu Verifikasi", validationAdminNotes);
+                    setShowAttendanceDetailModal(false);
+                  }}
+                  className="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 rounded-xl font-bold text-xs cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">pending</span>
+                  <span>Set Menunggu Review</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleValidateAttendance(selectedAttendanceForDetail.id, "Hadir", validationAdminNotes);
+                    setShowAttendanceDetailModal(false);
+                  }}
+                  className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs cursor-pointer shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                  <span>Setujui (Hadir Sah)</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

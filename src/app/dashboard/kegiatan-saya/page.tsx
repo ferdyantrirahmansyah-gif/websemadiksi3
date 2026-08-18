@@ -956,17 +956,31 @@ function KegiatanSayaContent() {
                       })()}
                     </div>
 
-                    <span className="font-mono text-xs tracking-widest text-neutral-800 font-bold block">{showTicketReceipt.code}</span>
-                    <p className="text-[9px] text-on-surface-variant mt-1 leading-tight">
-                      Pindai QR Code di atas saat melakukan check-in pendaftaran di lokasi auditorium.
-                    </p>
+                    <Link
+                      href={`/absensi?kegiatan=${encodeURIComponent(showTicketReceipt.title)}`}
+                      className="inline-block p-1 bg-white hover:ring-2 hover:ring-primary rounded-xl transition-all cursor-pointer group"
+                      title="Klik untuk membuka Formulir Absensi Kehadiran Online"
+                    >
+                      <span className="font-mono text-xs tracking-widest text-neutral-800 font-bold block">{showTicketReceipt.code}</span>
+                      <p className="text-[9px] text-primary group-hover:underline font-bold mt-1 leading-tight flex items-center justify-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">how_to_reg</span>
+                        <span>Klik Disini untuk Buka Absensi Online</span>
+                      </p>
+                    </Link>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Modal Actions Footer */}
-            <div className="p-4 bg-surface-container-low border-t border-surface-variant/30 flex gap-2 justify-end no-print shrink-0">
+            <div className="p-4 bg-surface-container-low border-t border-surface-variant/30 flex flex-wrap gap-2 justify-end no-print shrink-0">
+              <Link
+                href={`/absensi?kegiatan=${encodeURIComponent(showTicketReceipt.title)}`}
+                className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-full font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all"
+              >
+                <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
+                <span>Isi Absensi Kegiatan</span>
+              </Link>
               <button
                 onClick={() => setShowTicketReceipt(null)}
                 className="px-5 py-2 text-xs border border-surface-variant text-on-surface-variant hover:bg-surface-variant/15 rounded-full font-bold cursor-pointer transition-all"

@@ -277,3 +277,122 @@ export const INITIAL_INFO_BEASISWA: BeasiswaItem[] = [
     createdAt: "2026-08-10 13:00"
   }
 ];
+
+export interface AttendanceRecord {
+  id: string;
+  activityId: string;
+  activityTitle: string;
+  activityCategory?: string;
+  activityDate?: string;
+  studentName: string;
+  studentNim: string;
+  university: string;
+  studentEmail?: string;
+  studentPhone?: string;
+  proofImageUrl: string;
+  proofFileName?: string;
+  timestamp: string;
+  status: "Hadir" | "Menunggu Verifikasi" | "Ditolak";
+  notes?: string;
+  deviceInfo?: string;
+  locationName?: string;
+}
+
+export const INITIAL_ATTENDANCES: AttendanceRecord[] = [
+  {
+    id: "att-001",
+    activityId: "act-b",
+    activityTitle: "Latihan Kepemimpinan Mahasiswa Berprestasi (LKMB)",
+    activityCategory: "Seminar",
+    activityDate: "16 November 2026",
+    studentName: "Ahmad Fauzan",
+    studentNim: "2240021001",
+    university: "Universitas Nahdlatul Ulama Surabaya",
+    studentEmail: "ahmad.fauzan@unusa.ac.id",
+    studentPhone: "081234567890",
+    proofImageUrl: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&auto=format&fit=crop&q=80",
+    proofFileName: "Selfie_Kehadiran_LKMB_AhmadFauzan.jpg",
+    timestamp: "16 Nov 2026, 08:45 WIB",
+    status: "Hadir",
+    notes: "Kehadiran terverifikasi di Auditorium Tower UNUSA Lantai 9.",
+    deviceInfo: "Mobile Web (Chrome Android)",
+    locationName: "Auditorium Kampus B UNUSA (GPS Valid)"
+  },
+  {
+    id: "att-002",
+    activityId: "act-b",
+    activityTitle: "Latihan Kepemimpinan Mahasiswa Berprestasi (LKMB)",
+    activityCategory: "Seminar",
+    activityDate: "16 November 2026",
+    studentName: "Budi Santoso",
+    studentNim: "2240021045",
+    university: "Universitas Nahdlatul Ulama Surabaya",
+    studentEmail: "budi.santoso@unusa.ac.id",
+    studentPhone: "081987654321",
+    proofImageUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80",
+    proofFileName: "Bukti_Registrasi_BudiSantoso.jpg",
+    timestamp: "16 Nov 2026, 08:52 WIB",
+    status: "Hadir",
+    notes: "Bukti absensi valid.",
+    deviceInfo: "Mobile Web (Safari iOS)",
+    locationName: "Kampus B UNUSA Surabaya"
+  },
+  {
+    id: "att-003",
+    activityId: "act-a",
+    activityTitle: "SEMADIKSI Peduli: Bakti Sosial Akhir Tahun",
+    activityCategory: "Sosial",
+    activityDate: "20 Desember 2026",
+    studentName: "Clara Citra",
+    studentNim: "2240021088",
+    university: "Universitas Diponegoro",
+    studentEmail: "clara.citra@student.undip.ac.id",
+    studentPhone: "082134567899",
+    proofImageUrl: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=80",
+    proofFileName: "Dokumentasi_Baksos_Clara.jpg",
+    timestamp: "20 Des 2026, 09:10 WIB",
+    status: "Menunggu Verifikasi",
+    notes: "Menunggu pencocokan daftar hadir panitia.",
+    deviceInfo: "Desktop Web (Windows 11)",
+    locationName: "Panti Asuhan Al-Ikhlas Jemursari"
+  },
+  {
+    id: "att-004",
+    activityId: "act-d",
+    activityTitle: "Lomba Poster Digital SEMADIKSI 2025",
+    activityCategory: "Kompetisi",
+    activityDate: "15 Februari 2026",
+    studentName: "Evi Latifah",
+    studentNim: "2240021033",
+    university: "Universitas Nahdlatul Ulama Surabaya",
+    studentEmail: "evi.latifah@unusa.ac.id",
+    studentPhone: "085712345678",
+    proofImageUrl: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80",
+    proofFileName: "Screenshot_Zoom_EviLatifah.png",
+    timestamp: "15 Feb 2026, 09:05 WIB",
+    status: "Hadir",
+    notes: "Terverifikasi hadir di Zoom Room 1.",
+    deviceInfo: "Mobile Web (Chrome)",
+    locationName: "Daring (Online Meeting)"
+  },
+  {
+    id: "att-005",
+    activityId: "ba-001",
+    activityTitle: "Berita Acara Pelantikan Pengurus & Rapat Kerja SEMADIKSI UNUSA Periode 2026/2027",
+    activityCategory: "Rapat Kerja",
+    activityDate: "10 Agustus 2026",
+    studentName: "Dedi Kurnia",
+    studentNim: "2240021072",
+    university: "UIN Walisongo",
+    studentEmail: "dedi.kurnia@walisongo.ac.id",
+    studentPhone: "087812349988",
+    proofImageUrl: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&auto=format&fit=crop&q=80",
+    proofFileName: "Presensi_Raker_Dedi.jpg",
+    timestamp: "10 Agu 2026, 08:30 WIB",
+    status: "Menunggu Verifikasi",
+    notes: "Menunggu approval ketua divisi.",
+    deviceInfo: "Mobile Web (Android)",
+    locationName: "Auditorium Tower UNUSA"
+  }
+];
+

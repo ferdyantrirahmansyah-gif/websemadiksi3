@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { BeritaAcaraItem, INITIAL_BERITA_ACARA } from "@/data/portalData";
 
 export default function BeritaAcaraPage() {
@@ -129,11 +130,10 @@ export default function BeritaAcaraPage() {
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer text-[11px] ${
-                  statusFilter === st
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer text-[11px] ${statusFilter === st
                     ? "bg-primary text-white shadow-sm font-bold"
                     : "text-on-surface-variant hover:bg-surface-variant/20"
-                }`}
+                  }`}
               >
                 {st === "Selesai" ? `✅ Selesai (${selesaiCount})` : st === "Akan Datang" ? `📅 Akan Datang (${upcomingCount})` : "Semua"}
               </button>
@@ -182,19 +182,17 @@ export default function BeritaAcaraPage() {
                   {/* Top Badges */}
                   <div className="absolute top-3 left-3 right-3 flex justify-between items-center gap-2">
                     <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black border backdrop-blur shadow-sm ${
-                        categoryColorMap[item.category] || "bg-surface-container text-on-surface"
-                      }`}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black border backdrop-blur shadow-sm ${categoryColorMap[item.category] || "bg-surface-container text-on-surface"
+                        }`}
                     >
                       {item.category}
                     </span>
 
                     <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide shadow-sm flex items-center gap-1 ${
-                        isSelesai
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black tracking-wide shadow-sm flex items-center gap-1 ${isSelesai
                           ? "bg-emerald-600 text-white"
                           : "bg-amber-500 text-white"
-                      }`}
+                        }`}
                     >
                       <span className="material-symbols-outlined text-[12px]">
                         {isSelesai ? "check_circle" : "event"}
@@ -242,14 +240,23 @@ export default function BeritaAcaraPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-2 flex items-center gap-2">
+                  <div className="pt-2 flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setSelectedBA(item)}
-                      className="flex-1 py-2.5 px-3 bg-primary text-on-primary hover:brightness-110 active:scale-95 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="flex-1 min-w-[120px] py-2.5 px-3 bg-primary text-on-primary hover:brightness-110 active:scale-95 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <span className="material-symbols-outlined text-[15px]">description</span>
-                      <span>Lihat Berita Acara</span>
+                      <span>Berita Acara</span>
                     </button>
+
+                    <Link
+                      href={`/absensi?kegiatan=${encodeURIComponent(item.title)}`}
+                      className="py-2.5 px-3 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5"
+                      title="Isi Presensi Kehadiran Kegiatan"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">how_to_reg</span>
+                      <span>Presensi QR</span>
+                    </Link>
 
                     {item.attachmentFileName && (
                       <button
@@ -385,17 +392,27 @@ export default function BeritaAcaraPage() {
 
             {/* Modal Footer */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-5 border-t border-surface-variant/30 mt-6">
-              {selectedBA.externalLink ? (
-                <a
-                  href={selectedBA.externalLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href={`/absensi?kegiatan=${encodeURIComponent(selectedBA.title)}`}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all"
                 >
-                  <span className="material-symbols-outlined text-[15px]">open_in_new</span>
-                  <span>Buka Tautan Berita / Dokumentasi Eksternal</span>
-                </a>
-              ) : <div></div>}
+                  <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
+                  <span>Isi Presensi / Scan QR Kegiatan</span>
+                </Link>
+
+                {selectedBA.externalLink && (
+                  <a
+                    href={selectedBA.externalLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline font-bold flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">open_in_new</span>
+                    <span>Dokumentasi Drive</span>
+                  </a>
+                )}
+              </div>
 
               <button
                 onClick={() => setSelectedBA(null)}

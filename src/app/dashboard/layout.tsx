@@ -242,6 +242,22 @@ export default function DashboardLayout({
                 Info Beasiswa
               </span>
             </Link>
+            <Link
+              href="/dashboard/absensi"
+              onClick={handleLinkClick}
+              className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                pathname === "/dashboard/absensi"
+                  ? "bg-primary text-white font-bold shadow-sm"
+                  : "text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              <span className={`material-symbols-outlined ${pathname === "/dashboard/absensi" ? "text-white" : "text-emerald-700"}`}>
+                how_to_reg
+              </span>
+              <span className="font-label-md text-label-md font-bold">
+                Presensi Kegiatan
+              </span>
+            </Link>
           </nav>
 
           {/* Bottom Sidebar Actions */}
