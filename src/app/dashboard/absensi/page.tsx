@@ -90,8 +90,16 @@ function DashboardAbsensiContent() {
         loadAttendanceHistory();
       }
     };
+    const handleCustomSync = () => {
+      loadAttendanceHistory();
+    };
+
     window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
+    window.addEventListener("semadiksi_attendances_updated", handleCustomSync);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("semadiksi_attendances_updated", handleCustomSync);
+    };
   }, [preselectedActivity]);
 
   const loadAttendanceHistory = () => {
@@ -172,8 +180,8 @@ function DashboardAbsensiContent() {
         proofImageUrl: proofImage,
         proofFileName: proofFileName || "Bukti_Kehadiran_Mahasiswa.jpg",
         timestamp: timestampFormatted,
-        status: "Hadir",
-        notes: "Absensi mandiri via sistem portal presensi digital.",
+        status: "Menunggu Verifikasi",
+        notes: notes.trim() || "Menunggu verifikasi bukti kehadiran oleh Admin Kemahasiswaan.",
         deviceInfo: navigator.userAgent.includes("Mobile") ? "Mobile Web" : "Desktop Web",
         locationName: gpsLocation
       };
@@ -188,6 +196,7 @@ function DashboardAbsensiContent() {
         localStorage.setItem("semadiksi_attendances", JSON.stringify(updatedList));
         setMyAttendanceHistory(updatedList);
         window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new CustomEvent("semadiksi_attendances_updated"));
       } catch (err) {}
 
       setIsSubmitting(false);
@@ -334,15 +343,15 @@ function DashboardAbsensiContent() {
         </div>
       ) : submittedRecord ? (
         /* SUCCESS CONFIRMATION IN DASHBOARD */
-        <div className="bg-surface-container-lowest rounded-3xl border border-emerald-500/30 p-6 md:p-8 shadow-md space-y-6 text-center animate-in zoom-in-95 duration-200">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-            <span className="material-symbols-outlined text-4xl">check_circle</span>
+        <div className="bg-surface-container-lowest rounded-3xl border border-amber-500/30 p-6 md:p-8 shadow-md space-y-6 text-center animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+            <span className="material-symbols-outlined text-4xl">pending_actions</span>
           </div>
 
           <div className="space-y-1">
-            <h3 className="font-extrabold text-2xl text-on-surface">Presensi Anda Berhasil Dicatat!</h3>
+            <h3 className="font-extrabold text-2xl text-on-surface">Presensi Anda Berhasil Dikirim!</h3>
             <p className="text-xs text-on-surface-variant max-w-md mx-auto">
-              Kehadiran pada kegiatan <strong>{submittedRecord.activityTitle}</strong> telah terdata dan tersambung langsung di sistem Admin Kemahasiswaan.
+              Kehadiran pada kegiatan <strong>{submittedRecord.activityTitle}</strong> telah terdata dan saat ini berstatus <strong className="text-amber-700">Menunggu Verifikasi Admin</strong>.
             </p>
           </div>
 
@@ -359,10 +368,11 @@ function DashboardAbsensiContent() {
               <span className="text-outline">Waktu Presensi:</span>
               <span className="text-on-surface font-medium">{submittedRecord.timestamp}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-outline">Status:</span>
-              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md font-bold text-[10px]">
-                {submittedRecord.status} (Terverifikasi)
+            <div className="flex justify-between items-center">
+              <span className="text-outline">Status Presensi:</span>
+              <span className="px-2.5 py-1 bg-amber-100 text-amber-800 border border-amber-300 rounded-md font-bold text-[10px] flex items-center gap-1">
+                <span className="material-symbols-outlined text-[12px]">schedule</span>
+                <span>{submittedRecord.status} (Pending Review)</span>
               </span>
             </div>
           </div>
@@ -384,7 +394,7 @@ function DashboardAbsensiContent() {
               onClick={() => setActiveSubTab("history")}
               className="px-5 py-2.5 bg-surface-container text-on-surface-variant hover:bg-surface-variant/30 rounded-xl font-bold text-xs cursor-pointer"
             >
-              Lihat Riwayat Saya
+              Lihat Riwayat Presensi Saya
             </button>
           </div>
         </div>
@@ -620,10 +630,44 @@ function DashboardAbsensiContent() {
                 </div>
                 <div>
                   <span className="text-[10px] text-outline block">Status Kehadiran:</span>
-                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-md font-bold text-[10px]">
-                    {selectedHistoryForModal.status} (Tervalidasi Admin)
-                  </span>
+                  <div className="mt-1">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold text-xs border ${
+                      selectedHistoryForModal.status === "Hadir"
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                        : selectedHistoryForModal.status === "Menunggu Verifikasi"
+                          ? "bg-amber-100 text-amber-800 border-amber-300"
+                          : "bg-error/10 text-error border-error/20"
+                    }`}>
+                      <span className="material-symbols-outlined text-[14px]">
+                        {selectedHistoryForModal.status === "Hadir"
+                          ? "check_circle"
+                          : selectedHistoryForModal.status === "Menunggu Verifikasi"
+                            ? "schedule"
+                            : "cancel"}
+                      </span>
+                      <span>
+                        {selectedHistoryForModal.status === "Hadir"
+                          ? "Hadir (Disetujui Admin)"
+                          : selectedHistoryForModal.status === "Menunggu Verifikasi"
+                            ? "Menunggu Verifikasi (Pending)"
+                            : "Presensi Ditolak Admin"}
+                      </span>
+                    </span>
+                  </div>
                 </div>
+
+                {selectedHistoryForModal.notes && (
+                  <div className={`p-3 rounded-xl border text-xs ${
+                    selectedHistoryForModal.status === "Ditolak"
+                      ? "bg-error/5 border-error/20 text-error"
+                      : "bg-surface-container border-surface-variant/20 text-on-surface"
+                  }`}>
+                    <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70">
+                      {selectedHistoryForModal.status === "Ditolak" ? "Alasan Penolakan Admin:" : "Catatan / Verifikasi Admin:"}
+                    </span>
+                    <p className="mt-0.5 font-medium leading-relaxed">{selectedHistoryForModal.notes}</p>
+                  </div>
+                )}
               </div>
             </div>
 

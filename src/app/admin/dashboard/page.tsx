@@ -572,9 +572,21 @@ export default function AdminDashboard() {
         }
       }
     };
+
+    const handleCustomAttendanceSync = () => {
+      const stored = localStorage.getItem("semadiksi_attendances");
+      if (stored) {
+        try {
+          setAttendanceList(JSON.parse(stored));
+        } catch (e) {}
+      }
+    };
+
     window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("semadiksi_attendances_updated", handleCustomAttendanceSync);
     return () => {
       window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("semadiksi_attendances_updated", handleCustomAttendanceSync);
     };
   }, [router]);
 
@@ -1549,12 +1561,22 @@ export default function AdminDashboard() {
     newStatus: "Hadir" | "Menunggu Verifikasi" | "Ditolak",
     customNotes?: string
   ) => {
+    const defaultNote = newStatus === "Hadir"
+      ? "Kehadiran diverifikasi sah oleh Admin Kemahasiswaan."
+      : newStatus === "Ditolak"
+        ? "Bukti kehadiran tidak sesuai / ditolak oleh Admin."
+        : "Menunggu verifikasi bukti kehadiran.";
+
+    const finalNotes = customNotes !== undefined && customNotes.trim().length > 0
+      ? customNotes.trim()
+      : defaultNote;
+
     const updated = attendanceList.map((att) => {
       if (att.id === attId) {
         return {
           ...att,
           status: newStatus,
-          notes: customNotes !== undefined ? customNotes : (newStatus === "Hadir" ? "Kehadiran diverifikasi sah oleh Admin." : "Bukti tidak sesuai / ditolak.")
+          notes: finalNotes
         };
       }
       return att;
@@ -1562,14 +1584,20 @@ export default function AdminDashboard() {
 
     setAttendanceList(updated);
     localStorage.setItem("semadiksi_attendances", JSON.stringify(updated));
+
     if (selectedAttendanceForDetail && selectedAttendanceForDetail.id === attId) {
       setSelectedAttendanceForDetail({
         ...selectedAttendanceForDetail,
         status: newStatus,
-        notes: customNotes !== undefined ? customNotes : (newStatus === "Hadir" ? "Kehadiran diverifikasi sah oleh Admin." : "Bukti tidak sesuai / ditolak.")
+        notes: finalNotes
       });
     }
-    alert(`Status presensi berhasil diubah menjadi "${newStatus}"!`);
+
+    // Trigger cross-tab and same-window synchronization
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new CustomEvent("semadiksi_attendances_updated"));
+
+    alert(`Status presensi berhasil diubah menjadi "${newStatus}"! Data telah tersinkronisasi ke seluruh sistem.`);
   };
 
   const handleDeleteAttendance = (attId: string, studentName: string) => {
@@ -1577,6 +1605,11 @@ export default function AdminDashboard() {
       const updated = attendanceList.filter((att) => att.id !== attId);
       setAttendanceList(updated);
       localStorage.setItem("semadiksi_attendances", JSON.stringify(updated));
+
+      // Trigger cross-tab and same-window synchronization
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("semadiksi_attendances_updated"));
+
       alert("Data presensi berhasil dihapus.");
     }
   };
@@ -4758,6 +4791,7 @@ export default function AdminDashboard() {
                             {/* Validation Actions */}
                             <td className="p-4 text-center">
                               <div className="flex items-center justify-center gap-1">
+                                {/* Detail & Review Modal Button */}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -4766,40 +4800,55 @@ export default function AdminDashboard() {
                                     setShowAttendanceDetailModal(true);
                                   }}
                                   className="p-1.5 hover:bg-primary/10 text-primary rounded-lg transition-colors cursor-pointer"
-                                  title="Buka Pratinjau & Validasi Lengkap"
+                                  title="Pratinjau Foto Bukti & Review Lengkap"
                                 >
-                                  <span className="material-symbols-outlined text-[16px]">visibility</span>
+                                  <span className="material-symbols-outlined text-[17px]">visibility</span>
                                 </button>
 
-                                {!isHadir && (
+                                {/* Approve / Hadir Button */}
+                                {item.status !== "Hadir" && (
                                   <button
                                     type="button"
-                                    onClick={() => handleValidateAttendance(item.id, "Hadir")}
+                                    onClick={() => handleValidateAttendance(item.id, "Hadir", "Kehadiran diverifikasi sah oleh Admin Kemahasiswaan.")}
                                     className="p-1.5 hover:bg-emerald-500/20 text-emerald-700 rounded-lg transition-colors cursor-pointer"
-                                    title="Setujui Kehadiran (Hadir)"
+                                    title="Setujui Kehadiran (Tandai Hadir)"
                                   >
-                                    <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                    <span className="material-symbols-outlined text-[17px]">check_circle</span>
                                   </button>
                                 )}
 
-                                {isHadir && (
+                                {/* Reject / Tolak Button */}
+                                {item.status !== "Ditolak" && (
                                   <button
                                     type="button"
-                                    onClick={() => handleValidateAttendance(item.id, "Ditolak")}
-                                    className="p-1.5 hover:bg-amber-500/20 text-amber-700 rounded-lg transition-colors cursor-pointer"
-                                    title="Tolak Bukti Kehadiran"
+                                    onClick={() => {
+                                      const reason = prompt(
+                                        `Masukkan alasan penolakan presensi untuk ${item.studentName}:`,
+                                        "Foto bukti tidak sesuai / tidak berada di lokasi kegiatan."
+                                      );
+                                      if (reason !== null) {
+                                        handleValidateAttendance(
+                                          item.id,
+                                          "Ditolak",
+                                          reason.trim() || "Bukti kehadiran tidak sesuai / ditolak oleh Admin."
+                                        );
+                                      }
+                                    }}
+                                    className="p-1.5 hover:bg-error/20 text-error rounded-lg transition-colors cursor-pointer"
+                                    title="Tolak Presensi (Tandai Ditolak)"
                                   >
-                                    <span className="material-symbols-outlined text-[16px]">cancel</span>
+                                    <span className="material-symbols-outlined text-[17px]">cancel</span>
                                   </button>
                                 )}
 
+                                {/* Delete Record Button */}
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteAttendance(item.id, item.studentName)}
-                                  className="p-1.5 hover:bg-error-container/20 text-error rounded-lg transition-colors cursor-pointer"
+                                  className="p-1.5 hover:bg-error-container/20 text-outline hover:text-error rounded-lg transition-colors cursor-pointer"
                                   title="Hapus Data Presensi"
                                 >
-                                  <span className="material-symbols-outlined text-[16px]">delete</span>
+                                  <span className="material-symbols-outlined text-[17px]">delete</span>
                                 </button>
                               </div>
                             </td>

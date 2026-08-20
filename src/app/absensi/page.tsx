@@ -155,8 +155,8 @@ function AbsensiFormContent() {
         proofImageUrl: proofImage,
         proofFileName: proofFileName || "Bukti_Kehadiran_Mahasiswa.jpg",
         timestamp: timestampFormatted,
-        status: "Hadir",
-        notes: "Absensi mandiri via pemindaian QR Code sistem.",
+        status: "Menunggu Verifikasi",
+        notes: notes.trim() || "Menunggu verifikasi bukti kehadiran oleh Admin Kemahasiswaan.",
         deviceInfo: navigator.userAgent.includes("Mobile") ? "Mobile Web (Smartphone Browser)" : "Desktop Web (Laptop/PC)",
         locationName: gpsLocation
       };
@@ -171,8 +171,9 @@ function AbsensiFormContent() {
         const updatedList = [newRecord, ...existingList];
         localStorage.setItem("semadiksi_attendances", JSON.stringify(updatedList));
 
-        // Dispatch storage event for real-time update in open tabs
+        // Dispatch storage events for real-time synchronization across tabs and windows
         window.dispatchEvent(new Event("storage"));
+        window.dispatchEvent(new CustomEvent("semadiksi_attendances_updated"));
       } catch (err) {}
 
       setIsSubmitting(false);
@@ -224,28 +225,39 @@ function AbsensiFormContent() {
         {submittedRecord ? (
           /* SUCCESS E-PRESENCE CARD */
           <div className="space-y-6 animate-in zoom-in-95 duration-300">
-            <div className="bg-white rounded-3xl border border-emerald-200 shadow-xl overflow-hidden">
+            <div className="bg-white rounded-3xl border border-amber-200 shadow-xl overflow-hidden">
               {/* Header Success Ribbon */}
-              <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 p-6 md:p-8 text-white text-center relative overflow-hidden">
+              <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-yellow-800 p-6 md:p-8 text-white text-center relative overflow-hidden">
                 <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto mb-3 shadow-inner">
-                  <span className="material-symbols-outlined text-4xl text-white">verified</span>
+                  <span className="material-symbols-outlined text-4xl text-white">pending_actions</span>
                 </div>
-                <h2 className="font-extrabold text-2xl md:text-3xl tracking-tight">Presensi Berhasil Dicatat!</h2>
-                <p className="text-emerald-100 text-xs md:text-sm mt-1 max-w-lg mx-auto">
-                  Data kehadiran Anda telah tersinkronisasi dan tercatat langsung di sistem database Admin Kemahasiswaan & SEMADIKSI UNUSA.
+                <h2 className="font-extrabold text-2xl md:text-3xl tracking-tight">Presensi Berhasil Dikirim!</h2>
+                <p className="text-amber-100 text-xs md:text-sm mt-1 max-w-lg mx-auto leading-relaxed">
+                  Data kehadiran Anda telah terdata di sistem dan saat ini berstatus <strong className="text-white bg-black/20 px-2 py-0.5 rounded-md">Menunggu Verifikasi (Pending)</strong>. Admin Kemahasiswaan akan mereview bukti foto kehadiran Anda.
                 </p>
-                <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-900/60 rounded-full text-xs font-mono font-bold tracking-wider">
+                <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-900/60 rounded-full text-xs font-mono font-bold tracking-wider">
                   <span>KODE PRESENSI:</span>
-                  <span className="text-emerald-300">{submittedRecord.id}</span>
+                  <span className="text-amber-300">{submittedRecord.id}</span>
                 </div>
               </div>
 
               {/* Digital E-Presence Ticket Body */}
               <div className="p-6 md:p-8 space-y-6">
+                {/* Status Notice Banner */}
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+                  <span className="material-symbols-outlined text-amber-700 text-xl shrink-0 mt-0.5">info</span>
+                  <div className="text-xs text-amber-900 space-y-1">
+                    <p className="font-bold">Status: Menunggu Review & Validasi Admin</p>
+                    <p className="text-amber-800 text-[11px] leading-relaxed">
+                      Admin akan memeriksa apakah foto bukti sesuai dengan kegiatan. Jika disetujui, status Anda akan berubah menjadi <strong>Hadir</strong>. Jika bukti tidak valid/tidak sesuai, status akan ditolak oleh Admin.
+                    </p>
+                  </div>
+                </div>
+
                 {/* Student & Event Summary */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl p-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-stone-50 border border-stone-200 rounded-2xl p-5">
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Data Mahasiswa</p>
+                    <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Data Mahasiswa</p>
                     <div>
                       <h4 className="font-extrabold text-base text-stone-900">{submittedRecord.studentName}</h4>
                       <p className="text-xs font-mono text-stone-600">NIM: {submittedRecord.studentNim}</p>
@@ -254,7 +266,7 @@ function AbsensiFormContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Kegiatan Yang Diikuti</p>
+                    <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Kegiatan Yang Diikuti</p>
                     <div>
                       <h4 className="font-bold text-sm text-emerald-900 leading-snug">{submittedRecord.activityTitle}</h4>
                       <p className="text-xs text-stone-500 mt-1 flex items-center gap-1">
@@ -272,8 +284,8 @@ function AbsensiFormContent() {
                 {/* Uploaded Proof Preview */}
                 <div className="space-y-2">
                   <p className="text-xs font-bold text-stone-700 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-emerald-700 text-[18px]">photo_camera</span>
-                    <span>Bukti Kehadiran Terverifikasi:</span>
+                    <span className="material-symbols-outlined text-amber-700 text-[18px]">photo_camera</span>
+                    <span>Bukti Kehadiran yang Dikirim:</span>
                   </p>
                   <div className="flex flex-col sm:flex-row items-center gap-4 bg-stone-50 border border-stone-200 rounded-2xl p-4">
                     <div className="w-28 h-28 rounded-xl overflow-hidden shadow-inner border border-stone-300 shrink-0 bg-stone-200">
@@ -287,9 +299,9 @@ function AbsensiFormContent() {
                       <p className="font-bold text-xs text-stone-900">{submittedRecord.proofFileName}</p>
                       <p className="text-[11px] text-stone-500">Tipe Perangkat: {submittedRecord.deviceInfo}</p>
                       <div className="pt-2 flex flex-wrap gap-2 justify-center sm:justify-start">
-                        <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full text-[11px] font-bold flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                          <span>Status: {submittedRecord.status}</span>
+                        <span className="px-2.5 py-1 bg-amber-100 text-amber-800 border border-amber-300 rounded-full text-[11px] font-bold flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px]">pending</span>
+                          <span>Status: Menunggu Verifikasi</span>
                         </span>
                       </div>
                     </div>
@@ -322,10 +334,10 @@ function AbsensiFormContent() {
                   </button>
 
                   <Link
-                    href="/dashboard"
+                    href="/dashboard/absensi"
                     className="px-5 py-3 bg-stone-900 hover:bg-black active:scale-98 text-white rounded-xl font-bold text-xs transition-all text-center"
                   >
-                    Ke Dashboard
+                    Lihat Status di Riwayat
                   </Link>
                 </div>
               </div>
