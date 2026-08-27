@@ -396,3 +396,369 @@ export const INITIAL_ATTENDANCES: AttendanceRecord[] = [
   }
 ];
 
+export interface PencairanKipkSubmission {
+  id: string;
+  timestamp: string;
+  emailAkademik: string;
+  namaLengkap: string;
+  nim: string;
+  prodi: string;
+  tahunMasuk: string;
+  suratRekomendasiProdi: string;
+  suratPernyataanMahasiswa: string;
+  jenisBeasiswa: "KIPK" | "Beasiswa Prestasi" | "Beasiswa Kemitraan" | "Lainnya";
+  jalurPenerimaKip: "REGULER" | "SKRIPSI" | "INKLUSI" | "ASPIRASI";
+  namaFraksiPengusul?: string;
+  uploadRaporPengusulPartai?: string;
+  keterangan: "LENGKAP" | "BELUM LENGKAP" | "Menunggu Verifikasi";
+}
+
+export const INITIAL_PENCAIRAN_KIPK: PencairanKipkSubmission[] = [
+  {
+    id: "pencairan-001",
+    timestamp: "1/15/2026 9:40:31",
+    emailAkademik: "3230023034@student.unusa.ac.id",
+    namaLengkap: "FAIS MAULANA",
+    nim: "3230023034",
+    prodi: "S1 Manajemen",
+    tahunMasuk: "2023",
+    suratRekomendasiProdi: "https://drive.google.com/open?id=1-1_0M4M-hRhpJ23bA72NxaBPU",
+    suratPernyataanMahasiswa: "https://drive.google.com/open?id=1-1kQYTV1Ok-MuVMqENsqJgQdT1v",
+    jenisBeasiswa: "KIPK",
+    jalurPenerimaKip: "REGULER",
+    namaFraksiPengusul: "-",
+    uploadRaporPengusulPartai: "-",
+    keterangan: "LENGKAP"
+  },
+  {
+    id: "pencairan-002",
+    timestamp: "1/15/2026 9:42:06",
+    emailAkademik: "3230023032@student.unusa.ac.id",
+    namaLengkap: "VINA NURMALA SARI",
+    nim: "3230023032",
+    prodi: "S1 Manajemen",
+    tahunMasuk: "2023",
+    suratRekomendasiProdi: "https://drive.google.com/file/d/1TsX4AaAZ-V0Z5ZdO1C7kTB5Cw4xwtmgo/view",
+    suratPernyataanMahasiswa: "https://drive.google.com/open?id=1N7Z3L0CRawLvSaPxPbcvOXk0UV",
+    jenisBeasiswa: "KIPK",
+    jalurPenerimaKip: "REGULER",
+    namaFraksiPengusul: "-",
+    uploadRaporPengusulPartai: "-",
+    keterangan: "LENGKAP"
+  },
+  {
+    id: "pencairan-003",
+    timestamp: "1/15/2026 10:15:36",
+    emailAkademik: "3230023037@student.unusa.ac.id",
+    namaLengkap: "Andia Dini Carmila",
+    nim: "3230023037",
+    prodi: "S1 Manajemen",
+    tahunMasuk: "2023",
+    suratRekomendasiProdi: "https://drive.google.com/file/d/1BfPIUHXX9ZT_LdWU4A682LCs3cxyHwtp/view",
+    suratPernyataanMahasiswa: "https://drive.google.com/open?id=1SNN3kP4KMNR_U3XPH1ZRMNZJU",
+    jenisBeasiswa: "KIPK",
+    jalurPenerimaKip: "REGULER",
+    namaFraksiPengusul: "-",
+    uploadRaporPengusulPartai: "-",
+    keterangan: "LENGKAP"
+  }
+];
+
+export interface InfoKipItem {
+  id: string;
+  title: string;
+  category: "Pengumuman" | "Hak & Kewajiban" | "Alur Pencairan" | "Berkas & Unduhan" | "FAQ & Regulasi";
+  content: string;
+  dateUploaded: string;
+  author: string;
+  attachmentFileName?: string;
+  attachmentUrl?: string;
+  priority?: "Tinggi" | "Normal";
+}
+
+export const INITIAL_INFO_KIP_ITEMS: InfoKipItem[] = [
+  {
+    id: "info-kip-001",
+    title: "Pengumuman Alur & Syarat Pencairan Beasiswa KIP Kuliah Semester Genap TA 2025/2026",
+    category: "Pengumuman",
+    content: "Berdasarkan Edaran Biro Kemahasiswaan UNUSA Nomor 088/UNUSA/KM/II/2026, seluruh mahasiswa penerima KIP Kuliah wajib melengkapi berkas pengajuan pencairan, KHS semester terakhir, dan Surat Rekomendasi Prodi sebelum tanggal 28 Februari 2026.",
+    dateUploaded: "2026-02-10 10:00:00",
+    author: "Biro Kemahasiswaan & Admin KIP UNUSA",
+    attachmentFileName: "Surat_Edaran_Pencairan_KIPK_Genap_2026.pdf",
+    attachmentUrl: "https://unusa.ac.id/edaran-kipk-2026.pdf",
+    priority: "Tinggi"
+  },
+  {
+    id: "info-kip-002",
+    title: "Tata Cara Pembukaan & Aktivasi Rekening BTN / Bank Mandiri Penerima KIP-K Baru",
+    category: "Alur Pencairan",
+    content: "Bagi mahasiswa penerima KIP-K angkatan terbaru yang membutuhkan pembukaan/pembaharuan buku tabungan KIP Kuliah, pengurusan surat pengantar dapat diunduh pada portal atau diajukan ke loket advokasi SEMADIKSI Tower Lt 2.",
+    dateUploaded: "2026-01-15 14:30:00",
+    author: "Divisi Advokasi SEMADIKSI",
+    attachmentFileName: "Panduan_Aktivasi_Rekening_KIPK.pdf",
+    attachmentUrl: "#",
+    priority: "Normal"
+  },
+  {
+    id: "info-kip-003",
+    title: "Ketentuan IPK Minimal 3.00 & Konsekuensi Penurunan Prestasi Akademik",
+    category: "Hak & Kewajiban",
+    content: "Mahasiswa penerima KIP-K UNUSA yang memperoleh IPK di bawah 3.00 akan dipanggil oleh tim evaluasi akademik untuk mendapatkan pembimbingan khusus. Penurunan IPK berturut-turut dalam 2 semester dapat mengakibatkan penangguhan Beasiswa KIP Kuliah.",
+    dateUploaded: "2026-01-05 09:00:00",
+    author: "Tim Evaluasi KIP UNUSA",
+    priority: "Tinggi"
+  }
+];
+
+export interface MonevAkademikSubmission {
+  id: string;
+  timestamp: string;
+  emailAkademik: string;
+  namaLengkap: string;
+  nim: string;
+  prodi: string;
+  tahunMasuk: string;
+  semesterSekarang: string;
+  
+  // Data Monev Akademik
+  ipsTerakhir: number;
+  ipkKumulatif: number;
+  khsTranskripUrl: string;
+  statusPerkuliahan: "Aktif Perkuliahan" | "Sedang Menyusun Skripsi / TA" | "Sedang Cuti / Kendala Akademik";
+  kendalaAkademikText?: string;
+  capaianPrestasiSoftskill?: string;
+
+  // Data Kondisi Terkini Ekonomi & Ortu / Wali (Sesuai Spreadsheet & Lampiran User)
+  berkasPenunjangEkonomi: string;
+  uploadBerkasPenunjangEkonomiUrl: string;
+  slipGajiOrtuUrl: string;
+  pekerjaanOrtu: string;
+  totalPenghasilanOrtu: string;
+  jumlahTanggunganOrtu: number | string;
+  kondisiTempatTinggal?: string;
+  catatanKondisiTerkini?: string;
+
+  // Status Verifikasi Admin
+  status: "Disetujui" | "Perlu Perbaikan" | "Menunggu Review";
+  catatanAdmin?: string;
+}
+
+export const INITIAL_MONEV_AKADEMIK_SUBMISSIONS: MonevAkademikSubmission[] = [
+  {
+    id: "monev-001",
+    timestamp: "1/16/2026 14:20:15",
+    emailAkademik: "3230023034@student.unusa.ac.id",
+    namaLengkap: "FAIS MAULANA",
+    nim: "3230023034",
+    prodi: "S1 Manajemen",
+    tahunMasuk: "2023",
+    semesterSekarang: "Semester 6",
+    ipsTerakhir: 3.75,
+    ipkKumulatif: 3.68,
+    khsTranskripUrl: "https://drive.google.com/open?id=1KHS_FaisMaulana_Sem5",
+    statusPerkuliahan: "Aktif Perkuliahan",
+    kendalaAkademikText: "Tidak ada kendala, perkuliahan berjalan lancar.",
+    capaianPrestasiSoftskill: "Juara 2 Lomba Business Plan Tingkat Jawa Timur 2025",
+    berkasPenunjangEkonomi: "KARTU INDONESIA PINTAR (KIP)",
+    uploadBerkasPenunjangEkonomiUrl: "https://drive.google.com/open?id=1xq_HQ1upY8-92KV0Ne9haUB0",
+    slipGajiOrtuUrl: "https://drive.google.com/open?id=10zgSKqK24PDw0xch92eK08Owc2b8",
+    pekerjaanOrtu: "pegawai swasta",
+    totalPenghasilanOrtu: "3.803.639",
+    jumlahTanggunganOrtu: "10",
+    kondisiTempatTinggal: "Kost dekat Kampus B",
+    catatanKondisiTerkini: "Menanggung 10 anggota keluarga, membutuhkan bantuan beasiswa KIPK aktif.",
+    status: "Disetujui",
+    catatanAdmin: "Berkas lengkap dan verified oleh tim kemahasiswaan."
+  },
+  {
+    id: "monev-002",
+    timestamp: "1/16/2026 15:05:40",
+    emailAkademik: "3230023032@student.unusa.ac.id",
+    namaLengkap: "VINA NURMALA SARI",
+    nim: "3230023032",
+    prodi: "S1 Manajemen",
+    tahunMasuk: "2023",
+    semesterSekarang: "Semester 6",
+    ipsTerakhir: 3.82,
+    ipkKumulatif: 3.79,
+    khsTranskripUrl: "https://drive.google.com/open?id=1KHS_VinaNurmala_Sem5",
+    statusPerkuliahan: "Aktif Perkuliahan",
+    kendalaAkademikText: "-",
+    capaianPrestasiSoftskill: "Panitia Raker SEMADIKSI 2026 & Moderating Softskill Bootcamp",
+    berkasPenunjangEkonomi: "Bukti Terdaftar DTKS/DTSEN (dibuktikan dengan screenshot)",
+    uploadBerkasPenunjangEkonomiUrl: "https://drive.google.com/open?id=1ubAKpwg78IpIRTuFe7rnKqDPnf",
+    slipGajiOrtuUrl: "https://drive.google.com/open?id=1xwjnX3lpSsmkxOSFIRFyFTM_6clkjM4",
+    pekerjaanOrtu: "Buruh Tani",
+    totalPenghasilanOrtu: "1.500.000",
+    jumlahTanggunganOrtu: "7",
+    kondisiTempatTinggal: "Rumah Orang Tua",
+    catatanKondisiTerkini: "Orang tua bekerja sebagai buruh tani musiman.",
+    status: "Disetujui",
+    catatanAdmin: "Prestasi akademik memuaskan (IPK > 3.75)."
+  },
+  {
+    id: "monev-003",
+    timestamp: "1/16/2026 16:30:11",
+    emailAkademik: "3230023037@student.unusa.ac.id",
+    namaLengkap: "Andia Dini Carmila",
+    nim: "3230023037",
+    prodi: "S1 Manajemen",
+    tahunMasuk: "2023",
+    semesterSekarang: "Semester 6",
+    ipsTerakhir: 3.60,
+    ipkKumulatif: 3.55,
+    khsTranskripUrl: "https://drive.google.com/open?id=1KHS_AndiaDini_Sem5",
+    statusPerkuliahan: "Aktif Perkuliahan",
+    kendalaAkademikText: "-",
+    capaianPrestasiSoftskill: "Peserta Seminar Nasional Digital Marketing UNUSA",
+    berkasPenunjangEkonomi: "Bukti Terdaftar DTKS/DTSEN (dibuktikan dengan screenshot)",
+    uploadBerkasPenunjangEkonomiUrl: "https://drive.google.com/open?id=1V9ruDCK9_F-o9dU0-V48N11O7kp",
+    slipGajiOrtuUrl: "https://drive.google.com/open?id=1KFXU0Fym3PWWnqeXmT_va1d8p3ZFL-p",
+    pekerjaanOrtu: "orang tua saya sudah tidak bekerja selama satu tahun",
+    totalPenghasilanOrtu: "Rp. 3.388.000 (Tiga Juta Tiga Ratus Delapan puluh delapan ribu)",
+    jumlahTanggunganOrtu: "3",
+    kondisiTempatTinggal: "Sewa / Kost",
+    catatanKondisiTerkini: "Penghasilan bersumber dari usaha keluarga tidak tetap.",
+    status: "Menunggu Review",
+    catatanAdmin: "Menunggu konfirmasi verifikasi slip gaji ortu."
+  }
+];
+
+export interface KipkDocument {
+  id: string;
+  userId?: string;
+  userName: string;
+  userEmail?: string;
+  userNim?: string;
+  userUniversity?: string;
+  userYearOfEntry?: string;
+  category: "Kartu KIP-K" | "SKTM" | "Keaktifan Ormawa" | "Kegiatan Webinar Soft Skill" | "Keikutsertaan Kompetisi" | "Kegiatan Semadiksi" | "KHS / Transkrip" | "Dokumen Tambahan";
+  title: string;
+  fileName: string;
+  fileSize?: string;
+  fileType?: "pdf" | "image" | "doc";
+  fileUrl?: string;
+  uploadedAt: string;
+  uploadedBy?: "Mahasiswa" | "Admin";
+  status: "Disetujui" | "Perlu Perbaikan" | "Menunggu Review" | "Belum Ada Berkas";
+  score: number; // 0 - 100
+  notes?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+}
+
+export const INITIAL_KIPK_DOCUMENTS: KipkDocument[] = [
+  {
+    id: "doc-1",
+    userId: "usr-1",
+    userName: "Ahmad Fauzan",
+    userEmail: "ahmad.fauzan@gmail.com",
+    userNim: "3230023034",
+    userUniversity: "Universitas Nahdlatul Ulama Surabaya",
+    userYearOfEntry: "2023",
+    category: "Keaktifan Ormawa",
+    title: "SK Kepengurusan BEM & Surat Tanda Aktif",
+    fileName: "SK_BEM_2026.pdf",
+    fileSize: "2.4 MB",
+    fileType: "pdf",
+    fileUrl: "https://drive.google.com/file/d/1_SK_BEM_2026/view",
+    uploadedAt: "10 Feb 2026, 09:30",
+    uploadedBy: "Mahasiswa",
+    status: "Disetujui",
+    score: 90,
+    notes: "Berkas sesuai dengan ketentuan dan SK telah ditandatangani Dekanat.",
+    verifiedAt: "11 Feb 2026, 14:10",
+    verifiedBy: "Admin Kemahasiswaan"
+  },
+  {
+    id: "doc-2",
+    userId: "usr-1",
+    userName: "Ahmad Fauzan",
+    userEmail: "ahmad.fauzan@gmail.com",
+    userNim: "3230023034",
+    userUniversity: "Universitas Nahdlatul Ulama Surabaya",
+    userYearOfEntry: "2023",
+    category: "Kegiatan Webinar Soft Skill",
+    title: "Sertifikat Webinar Leadership & Public Speaking",
+    fileName: "Sertifikat_Webinar.jpg",
+    fileSize: "1.8 MB",
+    fileType: "image",
+    fileUrl: "https://drive.google.com/file/d/1_Sertifikat_Webinar/view",
+    uploadedAt: "12 Feb 2026, 11:15",
+    uploadedBy: "Mahasiswa",
+    status: "Disetujui",
+    score: 95,
+    notes: "Berkas telah diverifikasi dan sertifikat aktif.",
+    verifiedAt: "12 Feb 2026, 14:00",
+    verifiedBy: "Admin Kemahasiswaan"
+  },
+  {
+    id: "doc-3",
+    userId: "usr-1",
+    userName: "Ahmad Fauzan",
+    userEmail: "ahmad.fauzan@gmail.com",
+    userNim: "3230023034",
+    userUniversity: "Universitas Nahdlatul Ulama Surabaya",
+    userYearOfEntry: "2023",
+    category: "Kegiatan Semadiksi",
+    title: "Sertifikat LKMB & Temu Akbar Semadiksi",
+    fileName: "Sertifikat_Semadiksi_Maba.pdf",
+    fileSize: "3.1 MB",
+    fileType: "pdf",
+    fileUrl: "https://drive.google.com/file/d/1_Sertifikat_LKMB/view",
+    uploadedAt: "13 Feb 2026, 16:45",
+    uploadedBy: "Mahasiswa",
+    status: "Disetujui",
+    score: 100,
+    notes: "Berkas telah diverifikasi dan lulus evaluasi.",
+    verifiedAt: "14 Feb 2026, 09:15",
+    verifiedBy: "Admin Kemahasiswaan"
+  },
+  {
+    id: "doc-4",
+    userId: "usr-1",
+    userName: "Ahmad Fauzan",
+    userEmail: "ahmad.fauzan@gmail.com",
+    userNim: "3230023034",
+    userUniversity: "Universitas Nahdlatul Ulama Surabaya",
+    userYearOfEntry: "2023",
+    category: "Kartu KIP-K",
+    title: "Kartu Resmi KIP Kuliah Kemdikbudristek",
+    fileName: "Kartu_KIPK_AhmadFauzan.pdf",
+    fileSize: "1.2 MB",
+    fileType: "pdf",
+    fileUrl: "https://drive.google.com/file/d/1_Kartu_KIPK/view",
+    uploadedAt: "01 Jan 2026, 08:00",
+    uploadedBy: "Mahasiswa",
+    status: "Disetujui",
+    score: 100,
+    notes: "Data KIP Kuliah valid di PDDikti dan PUSLAPDIK.",
+    verifiedAt: "02 Jan 2026, 10:00",
+    verifiedBy: "Admin Kemahasiswaan"
+  },
+  {
+    id: "doc-5",
+    userId: "usr-1",
+    userName: "Ahmad Fauzan",
+    userEmail: "ahmad.fauzan@gmail.com",
+    userNim: "3230023034",
+    userUniversity: "Universitas Nahdlatul Ulama Surabaya",
+    userYearOfEntry: "2023",
+    category: "KHS / Transkrip",
+    title: "Transkrip Nilai Akademik Semester Ganjil (IPK 3.82)",
+    fileName: "Transkrip_Semester_1_AhmadFauzan.pdf",
+    fileSize: "850 KB",
+    fileType: "pdf",
+    fileUrl: "https://drive.google.com/file/d/1_Transkrip_KHS/view",
+    uploadedAt: "12 Feb 2026, 08:20",
+    uploadedBy: "Admin",
+    status: "Disetujui",
+    score: 98,
+    notes: "Diinput langsung oleh Admin Akademik.",
+    verifiedAt: "12 Feb 2026, 08:30",
+    verifiedBy: "Admin Akademik"
+  }
+];
+
+
+

@@ -80,14 +80,14 @@ export default function DashboardLayout({
       icon: "workspace_premium",
     },
     {
-      name: "Laporan Kegiatan",
-      href: "/dashboard/pelaporan",
-      icon: "upload_file",
+      name: "Info Beasiswa",
+      href: "/dashboard/info-beasiswa",
+      icon: "school",
     },
     {
-      name: "Tiket & Pembayaran",
-      href: "/dashboard/pembayaran",
-      icon: "confirmation_number",
+      name: "Berita Acara Kegiatan",
+      href: "/dashboard/berita-acara",
+      icon: "newspaper",
     },
   ];
 
@@ -174,6 +174,9 @@ export default function DashboardLayout({
                 if (link.href === "/dashboard/pelaporan") {
                   return currentUser.kipStatus === "KIP UNUSA";
                 }
+                if (link.href === "/dashboard/info-beasiswa" || link.href === "/dashboard/berita-acara") {
+                  return currentUser.kipStatus !== "KIP UNUSA";
+                }
                 return true;
               })
               .map((link) => {
@@ -204,60 +207,96 @@ export default function DashboardLayout({
               );
             })}
 
-            {/* Special Section for KIP */}
-            <div className="mt-6 mb-2 px-6">
-              <p className="font-label-sm text-label-sm text-outline-variant uppercase tracking-wider font-bold">
-                Informasi & Berita KIP-K
-              </p>
-            </div>
-            <Link
-              href="/dashboard/berita-acara"
-              onClick={handleLinkClick}
-              className={`group relative px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 overflow-hidden ${
-                pathname === "/dashboard/berita-acara"
-                  ? "bg-primary text-white font-bold shadow-sm"
-                  : "text-on-surface-variant hover:bg-surface-container-high"
-              }`}
-            >
-              <span className={`material-symbols-outlined ${pathname === "/dashboard/berita-acara" ? "text-white" : "text-tertiary"}`}>
-                newspaper
-              </span>
-              <span className="font-label-md text-label-md font-bold">
-                Berita Acara Kegiatan
-              </span>
-            </Link>
-            <Link
-              href="/dashboard/info-beasiswa"
-              onClick={handleLinkClick}
-              className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
-                pathname === "/dashboard/info-beasiswa"
-                  ? "bg-primary text-white font-bold shadow-sm"
-                  : "text-on-surface-variant hover:bg-surface-container-high"
-              }`}
-            >
-              <span className={`material-symbols-outlined ${pathname === "/dashboard/info-beasiswa" ? "text-white" : "text-secondary"}`}>
-                school
-              </span>
-              <span className="font-label-md text-label-md font-bold">
-                Info Beasiswa
-              </span>
-            </Link>
-            <Link
-              href="/dashboard/absensi"
-              onClick={handleLinkClick}
-              className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
-                pathname === "/dashboard/absensi"
-                  ? "bg-primary text-white font-bold shadow-sm"
-                  : "text-on-surface-variant hover:bg-surface-container-high"
-              }`}
-            >
-              <span className={`material-symbols-outlined ${pathname === "/dashboard/absensi" ? "text-white" : "text-emerald-700"}`}>
-                how_to_reg
-              </span>
-              <span className="font-label-md text-label-md font-bold">
-                Presensi Kegiatan
-              </span>
-            </Link>
+            {/* Special Section for KIP - Only for KIP UNUSA students */}
+            {currentUser.kipStatus === "KIP UNUSA" && (
+              <>
+                <div className="mt-6 mb-2 px-6">
+                  <p className="font-label-sm text-label-sm text-outline-variant uppercase tracking-wider font-bold">
+                    Informasi & Berita KIP-K
+                  </p>
+                </div>
+                <Link
+                  href="/dashboard/berita-acara"
+                  onClick={handleLinkClick}
+                  className={`group relative px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 overflow-hidden ${
+                    pathname === "/dashboard/berita-acara"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/berita-acara" ? "text-white" : "text-tertiary"}`}>
+                    newspaper
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Berita Acara Kegiatan
+                  </span>
+                </Link>
+                <Link
+                  href="/dashboard/info-kip"
+                  onClick={handleLinkClick}
+                  className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                    pathname === "/dashboard/info-kip"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/info-kip" ? "text-white" : "text-secondary"}`}>
+                    verified_user
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Informasi Terkait KIP UNUSA
+                  </span>
+                </Link>
+                <Link
+                  href="/dashboard/berkas-kipk"
+                  onClick={handleLinkClick}
+                  className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                    pathname === "/dashboard/berkas-kipk"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/berkas-kipk" ? "text-white" : "text-blue-600"}`}>
+                    folder_shared
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Berkas KIP-K
+                  </span>
+                </Link>
+                <Link
+                  href="/dashboard/pengajuan-pencairan"
+                  onClick={handleLinkClick}
+                  className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                    pathname === "/dashboard/pengajuan-pencairan" || pathname === "/dashboard/pelaporan" || pathname === "/dashboard/monev-akademik"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/pengajuan-pencairan" || pathname === "/dashboard/pelaporan" || pathname === "/dashboard/monev-akademik" ? "text-white" : "text-amber-600"}`}>
+                    assignment_turned_in
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Pelaporan Beasiswa KIP-K
+                  </span>
+                </Link>
+                <Link
+                  href="/dashboard/absensi"
+                  onClick={handleLinkClick}
+                  className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                    pathname === "/dashboard/absensi"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/absensi" ? "text-white" : "text-emerald-700"}`}>
+                    how_to_reg
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Presensi Kegiatan
+                  </span>
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Bottom Sidebar Actions */}

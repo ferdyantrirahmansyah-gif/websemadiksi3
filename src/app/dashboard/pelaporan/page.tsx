@@ -2,69 +2,97 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { KipkDocument, INITIAL_KIPK_DOCUMENTS } from "@/data/portalData";
+import DynamicGoogleForm from "@/components/DynamicGoogleForm";
+import { INITIAL_PELAPORAN_QUESTIONS } from "@/app/admin/dashboard/page";
 
-interface ReportFile {
+interface PelaporanFormData {
   id: string;
-  title: string;
-  description: string;
-  status: "Disetujui" | "Perlu Perbaikan" | "Belum Ada Berkas" | "Menunggu Review";
-  fileName: string;
+  timestamp: string;
+  // Ormawa Section
+  isOrmawaActive: "Ya, Aktif" | "Tidak Aktif";
+  ormawaActivitiesText: string;
+  ormawaProofUrl: string;
+  ormawaInactiveReason?: string;
+
+  // Additional Group & Scholarship Reports (Spreadsheet Columns 16 & 17)
+  whatsappGroupProofUrl?: string;
+  scholarshipReportUrl?: string;
+
+  // Competition Summary Section
+  competitionCount: "0" | "1" | "2" | "3+";
+  noCompetitionReason?: string;
+  noCompetitionStatementUrl?: string;
+
+  // Detail Competition 1 (Exact Spreadsheet Columns)
+  comp1Rank?: "Peserta" | "Juara 1" | "Juara 2" | "Juara 3" | "Juara Harapan" | "Top 10" | "Apresiasi Kejuaraan";
+  comp1Level?: "Internasional" | "Nasional" | "Provinsi" | "Perguruan Tinggi / Lokal";
+  comp1Category?: "Minat Khusus" | "Riset dan Inovasi : SSH" | "Riset dan Inovasi : STEM" | "Seni dan Budaya" | "Olahraga" | "Agama / Keagamaan" | "Lainnya";
+  comp1Title?: string;
+  comp1Organizer?: string;
+  comp1UniversitiesCount?: string;
+  comp1ParticipantsCount?: string;
+  comp1ParticipationType?: "Individu" | "Kelompok / Tim";
+  comp1EventType?: "Daring / Hibrida" | "Luring / Offline";
+  comp1Url?: string;
+  comp1CertDate?: string;
+  comp1CertDocUrl?: string;
+  comp1DocumentationUrl?: string;
+  comp1InvitationDocUrl?: string;
+
+  // Confirmation Declaration (Spreadsheet Column 18)
+  isDataValidConfirmed?: boolean;
+
+  status: "Disetujui" | "Perlu Perbaikan" | "Menunggu Review";
   score: number;
   notes?: string;
-  downloadTemplate?: string;
 }
 
 export default function PelaporanPage() {
-  const [files, setFiles] = useState<ReportFile[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [queueNumber, setQueueNumber] = useState<string | null>(null);
   const [queueTime, setQueueTime] = useState<string | null>(null);
-  const [selectedFileForUpload, setSelectedFileForUpload] = useState<{ [key: string]: string }>({});
-  const [weights, setWeights] = useState<{ [key: string]: number }>({
-    "Keaktifan Ormawa": 25,
-    "Kegiatan Webinar Soft Skill": 25,
-    "Keikutsertaan Kompetisi": 25,
-    "Kegiatan Semadiksi": 25
-  });
+  const [activeTab, setActiveTab] = useState<"form" | "submitted">("form");
+  const [hasCompletedStep1, setHasCompletedStep1] = useState(false);
 
-  const defaultFiles: ReportFile[] = [
-    {
-      id: "ormawa",
-      title: "Keaktifan Ormawa",
-      description: "Upload SK Kepengurusan atau Surat Tanda Aktif Ormawa.",
-      status: "Disetujui",
-      fileName: "SK_BEM_2026.pdf",
-      score: 90,
-      notes: "Berkas sesuai.",
-      downloadTemplate: "#"
-    },
-    {
-      id: "webinar",
-      title: "Kegiatan Webinar Soft Skill",
-      description: "Upload Sertifikat keikutsertaan webinar.",
-      status: "Perlu Perbaikan",
-      fileName: "Sertifikat_Webinar.jpg",
-      score: 40,
-      notes: "Sertifikat buram/tidak terbaca. Harap scan ulang dengan resolusi lebih tinggi."
-    },
-    {
-      id: "kompetisi",
-      title: "Keikutsertaan Kompetisi",
-      description: "Upload Sertifikat juara atau peserta kompetisi.",
-      status: "Belum Ada Berkas",
-      fileName: "",
-      score: 0
-    },
-    {
-      id: "semadiksi",
-      title: "Kegiatan Semadiksi",
-      description: "Upload Sertifikat kegiatan Semadiksi KIPK.",
-      status: "Menunggu Review",
-      fileName: "Sertifikat_Semadiksi_Maba.pdf",
-      score: 100,
-      notes: "Menunggu review admin."
-    }
-  ];
+  // Ormawa Form State
+  const [isOrmawaActive, setIsOrmawaActive] = useState<"Ya, Aktif" | "Tidak Aktif">("Ya, Aktif");
+  const [ormawaActivitiesText, setOrmawaActivitiesText] = useState("Ketua BEM UNUSA, Panitia Bakti Sosial KIP-K 2026");
+  const [ormawaProofFile, setOrmawaProofFile] = useState<File | null>(null);
+  const [ormawaProofUrl, setOrmawaProofUrl] = useState("https://drive.google.com/file/d/SK_BEM_2026.pdf/view");
+  const [ormawaInactiveReason, setOrmawaInactiveReason] = useState("");
+
+  // Additional Group & Scholarship Proofs
+  const [whatsappGroupProofUrl, setWhatsappGroupProofUrl] = useState("https://drive.google.com/file/d/1_WA_Group_KIPK/view");
+  const [scholarshipReportUrl, setScholarshipReportUrl] = useState("https://drive.google.com/file/d/1_Laporan_Beasiswa/view");
+
+  // Competition Summary State
+  const [competitionCount, setCompetitionCount] = useState<"0" | "1" | "2" | "3+">("1");
+  const [noCompetitionReason, setNoCompetitionReason] = useState("");
+  const [noCompetitionStatementUrl, setNoCompetitionStatementUrl] = useState("");
+
+  // Competition 1 State (Exact Match to User Spreadsheet Columns)
+  const [comp1Rank, setComp1Rank] = useState<PelaporanFormData["comp1Rank"]>("Peserta");
+  const [comp1Level, setComp1Level] = useState<PelaporanFormData["comp1Level"]>("Nasional");
+  const [comp1Category, setComp1Category] = useState<PelaporanFormData["comp1Category"]>("Minat Khusus");
+  const [comp1Title, setComp1Title] = useState("Olimpiade Akademik KIP-K Nasional 2026");
+  const [comp1Organizer, setComp1Organizer] = useState("PRESMANSIA");
+  const [comp1UniversitiesCount, setComp1UniversitiesCount] = useState("185 Perguruan Tinggi");
+  const [comp1ParticipantsCount, setComp1ParticipantsCount] = useState("Lebih dari 5.000 Peserta");
+  const [comp1ParticipationType, setComp1ParticipationType] = useState<"Individu" | "Kelompok / Tim">("Individu");
+  const [comp1EventType, setComp1EventType] = useState<"Daring / Hibrida" | "Luring / Offline">("Daring / Hibrida");
+  const [comp1Url, setComp1Url] = useState("https://www.instagram.com/p/DYTuLD0xJ1");
+  const [comp1CertDate, setComp1CertDate] = useState("2026-05-17");
+  const [comp1CertDocUrl, setComp1CertDocUrl] = useState("https://drive.google.com/file/d/1_Sertifikat/view");
+  const [comp1DocumentationUrl, setComp1DocumentationUrl] = useState("https://drive.google.com/file/d/1_Dokumentasi/view");
+  const [comp1InvitationDocUrl, setComp1InvitationDocUrl] = useState("https://drive.google.com/file/d/1_Undangan/view");
+
+  // Confirmation Checkbox
+  const [isDataValidConfirmed, setIsDataValidConfirmed] = useState(true);
+
+  // Submissions State
+  const [savedReports, setSavedReports] = useState<PelaporanFormData[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Load current user
@@ -75,202 +103,237 @@ export default function PelaporanPage() {
       } catch (e) {}
     }
 
-    // Load report files status
-    const storedFiles = localStorage.getItem("semadiksi_report_files");
-    if (storedFiles) {
+    // Load queue number
+    const qNum = localStorage.getItem("semadiksi_user_queue_number");
+    const qTime = localStorage.getItem("semadiksi_user_queue_time");
+    if (qNum) setQueueNumber(qNum);
+    if (qTime) setQueueTime(qTime);
+
+    // Check Step 1 completion
+    const step1Data = localStorage.getItem("semadiksi_pencairan_kipk_submissions");
+    if (step1Data) {
       try {
-        setFiles(JSON.parse(storedFiles));
+        const parsed = JSON.parse(step1Data);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setHasCompletedStep1(true);
+        }
+      } catch (e) {}
+    }
+
+    // Load existing reports
+    const storedReports = localStorage.getItem("semadiksi_pelaporan_kipk_forms");
+    if (storedReports) {
+      try {
+        setSavedReports(JSON.parse(storedReports));
       } catch (e) {
-        setFiles(defaultFiles);
+        setSavedReports([]);
       }
     } else {
-      setFiles(defaultFiles);
-      localStorage.setItem("semadiksi_report_files", JSON.stringify(defaultFiles));
-    }
-
-    // Load saved queue number
-    const storedQueue = localStorage.getItem("semadiksi_user_queue_number");
-    const storedQueueTime = localStorage.getItem("semadiksi_user_queue_time");
-    if (storedQueue) {
-      setQueueNumber(storedQueue);
-      setQueueTime(storedQueueTime);
-    }
-
-    // Load category weights from localStorage
-    const storedWeights = localStorage.getItem("semadiksi_category_weights");
-    if (storedWeights) {
-      try {
-        const parsed = JSON.parse(storedWeights);
-        if (parsed["Keaktifan Ormawa"] !== undefined) {
-          setWeights(parsed);
-        }
-      } catch (err) {}
+      const defaultSample: PelaporanFormData = {
+        id: "rep-1",
+        timestamp: "17 Mei 2026, 10:00",
+        isOrmawaActive: "Ya, Aktif",
+        ormawaActivitiesText: "Ketua BEM UNUSA, Panitia Bakti Sosial KIP-K 2026",
+        ormawaProofUrl: "https://drive.google.com/file/d/SK_BEM_2026.pdf/view",
+        whatsappGroupProofUrl: "https://drive.google.com/file/d/1_WA_Group_KIPK/view",
+        scholarshipReportUrl: "https://drive.google.com/file/d/1_Laporan_Beasiswa/view",
+        competitionCount: "1",
+        comp1Rank: "Peserta",
+        comp1Level: "Nasional",
+        comp1Category: "Minat Khusus",
+        comp1Title: "Olimpiade Akademik KIP-K Nasional 2026",
+        comp1Organizer: "PRESMANSIA",
+        comp1UniversitiesCount: "185 Perguruan Tinggi",
+        comp1ParticipantsCount: "Lebih dari 5.000 Peserta",
+        comp1ParticipationType: "Individu",
+        comp1EventType: "Daring / Hibrida",
+        comp1Url: "https://www.instagram.com/p/DYTuLD0xJ1",
+        comp1CertDate: "2026-05-17",
+        comp1CertDocUrl: "https://drive.google.com/file/d/1_Sertifikat/view",
+        comp1DocumentationUrl: "https://drive.google.com/file/d/1_Dokumentasi/view",
+        comp1InvitationDocUrl: "https://drive.google.com/file/d/1_Undangan/view",
+        isDataValidConfirmed: true,
+        status: "Disetujui",
+        score: 95,
+        notes: "Laporan keaktifan dan dokumen prestasi terverifikasi lengkap sesuai spreadsheet admin."
+      };
+      setSavedReports([defaultSample]);
+      localStorage.setItem("semadiksi_pelaporan_kipk_forms", JSON.stringify([defaultSample]));
     }
   }, []);
 
-  const handleFileChange = (id: string, name: string) => {
-    setSelectedFileForUpload({
-      ...selectedFileForUpload,
-      [id]: name
-    });
-  };
-
-  const handleRemoveFile = (id: string) => {
-    const updated = files.map((f) => {
-      if (f.id === id) {
-        return {
-          ...f,
-          fileName: "",
-          status: "Belum Ada Berkas" as const,
-          score: 0,
-          notes: undefined
-        };
-      }
-      return f;
-    });
-    setFiles(updated);
-    localStorage.setItem("semadiksi_report_files", JSON.stringify(updated));
-
-    setSelectedFileForUpload({
-      ...selectedFileForUpload,
-      [id]: ""
-    });
-  };
-
-  const handleUpload = (id: string) => {
-    const fileName = selectedFileForUpload[id];
-    if (!fileName) {
-      alert("Silakan pilih file terlebih dahulu!");
-      return;
+  const calculateTotalScore = () => {
+    let score = 0;
+    if (isOrmawaActive === "Ya, Aktif") score += 50;
+    if (competitionCount !== "0") {
+      if (comp1Rank === "Juara 1" || comp1Rank === "Juara 2" || comp1Rank === "Juara 3") score += 50;
+      else score += 45;
+    } else {
+      score += 20;
     }
-
-    // Simulate different upload responses to allow user to easily pass the 80% mark
-    const updated = files.map((f) => {
-      if (f.id === id) {
-        // If they upload to "Kompetisi", let's auto approve with 90% score to help them reach 80% avg!
-        if (id === "kompetisi") {
-          return {
-            ...f,
-            fileName: fileName,
-            status: "Disetujui" as const,
-            score: 90,
-            notes: "Berkas kompetisi valid dan diverifikasi otomatis."
-          };
-        }
-        // If they upload to "Webinar" to fix it, auto approve with 95% score!
-        if (id === "webinar") {
-          return {
-            ...f,
-            fileName: fileName,
-            status: "Disetujui" as const,
-            score: 95,
-            notes: "Perbaikan berkas disetujui."
-          };
-        }
-        // General fallback
-        return {
-          ...f,
-          fileName: fileName,
-          status: "Menunggu Review" as const,
-          score: 100,
-          notes: "Menunggu review panitia pelaksana."
-        };
-      }
-      return f;
-    });
-
-    setFiles(updated);
-    localStorage.setItem("semadiksi_report_files", JSON.stringify(updated));
-    alert(`Berkas untuk '${files.find(f => f.id === id)?.title}' berhasil diajukan!`);
+    return Math.min(100, score);
   };
 
-  const calculateWeightedScore = (currentFiles: ReportFile[]) => {
-    if (currentFiles.length === 0) return 0;
-    const totalWeighted = currentFiles.reduce((acc, f) => {
-      let w = 25;
-      if (f.id === "ormawa") w = weights["Keaktifan Ormawa"] !== undefined ? weights["Keaktifan Ormawa"] : 25;
-      if (f.id === "webinar") w = weights["Kegiatan Webinar Soft Skill"] !== undefined ? weights["Kegiatan Webinar Soft Skill"] : 25;
-      if (f.id === "kompetisi") w = weights["Keikutsertaan Kompetisi"] !== undefined ? weights["Keikutsertaan Kompetisi"] : 25;
-      if (f.id === "semadiksi") w = weights["Kegiatan Semadiksi"] !== undefined ? weights["Kegiatan Semadiksi"] : 25;
-      return acc + (f.score * (w / 100));
-    }, 0);
-    return Math.round(totalWeighted);
+  const getWeightedBerkasScore = () => {
+    try {
+      const storedDocs = localStorage.getItem("semadiksi_kipk_documents");
+      const storedWeights = localStorage.getItem("semadiksi_category_weights");
+      const docs = storedDocs ? JSON.parse(storedDocs) : INITIAL_KIPK_DOCUMENTS;
+      const weights = storedWeights ? JSON.parse(storedWeights) : {
+        "Keaktifan Ormawa": 25,
+        "Kegiatan Webinar Soft Skill": 25,
+        "Keikutsertaan Kompetisi": 25,
+        "Kegiatan Semadiksi": 25
+      };
+
+      const categories = ["Keaktifan Ormawa", "Kegiatan Webinar Soft Skill", "Keikutsertaan Kompetisi", "Kegiatan Semadiksi"];
+      let total = 0;
+      categories.forEach((cat) => {
+        const catDocs = docs.filter((d: any) => d.category === cat && d.status === "Disetujui");
+        const bestCatScore = catDocs.length > 0 ? Math.max(...catDocs.map((d: any) => d.score || 0)) : 0;
+        const weight = (weights[cat] || 25) / 100;
+        total += bestCatScore * weight;
+      });
+
+      return Math.round(total);
+    } catch (e) {
+      return 0;
+    }
   };
 
   const handleGetQueueNumber = () => {
-    const avgScore = calculateWeightedScore(files);
-    if (avgScore < 80) {
-      alert("Gagal mengambil nomor antrean! Akumulasi skor penilaian Anda di bawah 80%.");
+    const currentScore = getWeightedBerkasScore() || (savedReports.length > 0 ? savedReports[0].score : calculateTotalScore());
+    if (currentScore < 80) {
+      alert(`Gagal mengambil nomor antrean!\n\nSkor rata-rata akumulasi kelayakan keaktifan Anda saat ini adalah ${currentScore}%, yang mana berada di bawah batas minimal 80%.\n\nHarap lengkapi & tingkatkan berkas portofolio Anda pada menu 'Berkas KIP-K' agar mencapai minimal 80%.`);
       return;
     }
 
     const num = `KIP-${Math.floor(100 + Math.random() * 900)}`;
-    const timeStr = new Date().toLocaleString("id-ID", {
-      dateStyle: "medium",
-      timeStyle: "short"
-    });
+    const timeStr = new Date().toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
 
     setQueueNumber(num);
     setQueueTime(timeStr);
     localStorage.setItem("semadiksi_user_queue_number", num);
     localStorage.setItem("semadiksi_user_queue_time", timeStr);
 
-    // Sync to user session
-    if (currentUser) {
-      const updatedUser = { ...currentUser, queueNumber: num };
-      setCurrentUser(updatedUser);
-      localStorage.setItem("semadiksi_current_user", JSON.stringify(updatedUser));
-
-      // Sync to global user list
-      const storedUsers = localStorage.getItem("semadiksi_users");
-      if (storedUsers) {
-        try {
-          const usersList = JSON.parse(storedUsers);
-          const updatedList = usersList.map((u: any) => u.id === currentUser.id ? { ...u, queueNumber: num } : u);
-          localStorage.setItem("semadiksi_users", JSON.stringify(updatedList));
-        } catch (err) {}
-      }
-    }
-
     alert(`Sukses mengambil nomor antrean: ${num}`);
   };
 
-  const handleCancelQueue = () => {
-    if (confirm("Apakah Anda yakin ingin membatalkan nomor antrean saat ini?")) {
-      setQueueNumber(null);
-      setQueueTime(null);
-      localStorage.removeItem("semadiksi_user_queue_number");
-      localStorage.removeItem("semadiksi_user_queue_time");
+  const handleDynamicFormSubmit = (answers: { [qId: string]: any }, answersByTitle: { [title: string]: any }) => {
+    setIsSubmitting(true);
+    const nowStr = new Date().toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
 
-      // Sync to user session
-      if (currentUser) {
-        const updatedUser = { ...currentUser };
-        delete updatedUser.queueNumber;
-        setCurrentUser(updatedUser);
-        localStorage.setItem("semadiksi_current_user", JSON.stringify(updatedUser));
+    const isOrmawa = answersByTitle["Apakah Saudara aktif dalam kegiatan Ormawa/UKM semester ini?"] || "Ya, Aktif";
+    const activities = answersByTitle["Sebutkan Kegiatan Ormawa yang Diikuti"] || "Ketua BEM UNUSA, Panitia Bakti Sosial KIP-K 2026";
+    const compTitle = answersByTitle["4. Nama Kompetisi / Lomba"] || "Olimpiade Akademik KIP-K Nasional 2026";
 
-        // Sync to global user list
-        const storedUsers = localStorage.getItem("semadiksi_users");
-        if (storedUsers) {
-          try {
-            const usersList = JSON.parse(storedUsers);
-            const updatedList = usersList.map((u: any) => {
-              if (u.id === currentUser.id) {
-                const copy = { ...u };
-                delete copy.queueNumber;
-                return copy;
-              }
-              return u;
-            });
-            localStorage.setItem("semadiksi_users", JSON.stringify(updatedList));
-          } catch (err) {}
-        }
-      }
-    }
+    const newReport: PelaporanFormData = {
+      id: `rep-${Date.now()}`,
+      timestamp: nowStr,
+      isOrmawaActive: String(isOrmawa).includes("Ya") ? "Ya, Aktif" : "Tidak Aktif",
+      ormawaActivitiesText: String(activities),
+      ormawaProofUrl: answersByTitle["Bukti Keaktifan (SK Pengurus / Surat Tanda Aktif)"] || "https://drive.google.com/file/d/SK_BEM_2026.pdf/view",
+      whatsappGroupProofUrl: answersByTitle["Screenshot Bukti Anda Masih Bergabung di Grup WA Beasiswa KIPK"] || "https://drive.google.com/file/d/1_WA_Group_KIPK/view",
+      scholarshipReportUrl: answersByTitle["Upload File Laporan Beasiswa KIP-K"] || "https://drive.google.com/file/d/1_Laporan_Beasiswa/view",
+
+      competitionCount: "1",
+      comp1Rank: answersByTitle["1. Peringkat / Capaian Lomba"] || "Peserta",
+      comp1Level: answersByTitle["2. Tingkat Kompetisi"] || "Nasional",
+      comp1Category: answersByTitle["3. Pilih Kategori Kompetisi"] || "Minat Khusus",
+      comp1Title: String(compTitle),
+      comp1Organizer: answersByTitle["5. Nama Penyelenggara"] || "PRESMANSIA",
+      comp1UniversitiesCount: answersByTitle["6. Jml Perguruan Tinggi / Negara Mengikuti"] || "185 Perguruan Tinggi",
+      comp1ParticipantsCount: answersByTitle["7. Jml Peserta Yang Mengikuti"] || "Lebih dari 5.000 Peserta",
+      comp1ParticipationType: answersByTitle["8. Kepesertaan"] || "Individu",
+      comp1EventType: answersByTitle["9. Bentuk Kegiatan"] || "Daring / Hibrida",
+      comp1Url: answersByTitle["10. Link / URL Publikasi Lomba"] || "https://www.instagram.com/p/DYTuLD0xJ1",
+      comp1CertDate: answersByTitle["11. Tanggal Sertifikat"] || "2026-05-17",
+      comp1CertDocUrl: answersByTitle["12. Dokumen Sertifikat (Drive Link)"] || "https://drive.google.com/file/d/1_Sertifikat/view",
+      comp1DocumentationUrl: answersByTitle["13. Dokumentasi Penyerahan / Pemenang"] || "https://drive.google.com/file/d/1_Dokumentasi/view",
+      comp1InvitationDocUrl: answersByTitle["14. Dokumen Undangan / Surat Tugas"] || "https://drive.google.com/file/d/1_Undangan/view",
+      isDataValidConfirmed: true,
+
+      status: "Menunggu Review",
+      score: 85,
+    };
+
+    const updated = [newReport, ...savedReports];
+    setSavedReports(updated);
+    localStorage.setItem("semadiksi_pelaporan_kipk_forms", JSON.stringify(updated));
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+      alert("Laporan Keaktifan & Lomba KIP-K Anda telah berhasil terkirim!");
+      setActiveTab("submitted");
+    }, 600);
   };
 
-  const avgScore = calculateWeightedScore(files);
-  const canGetQueue = avgScore >= 80;
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!isDataValidConfirmed) {
+      alert("Harap centang konfirmasi pernyataan kebenaran data!");
+      return;
+    }
+
+    if (isOrmawaActive === "Ya, Aktif" && !ormawaProofUrl.trim() && !ormawaProofFile) {
+      alert("Harap unggah Bukti Keaktifan Ormawa/UKM!");
+      return;
+    }
+
+    if (competitionCount !== "0" && !comp1Title.trim()) {
+      alert("Harap isi Nama Kompetisi / Lomba yang Anda ikuti!");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const nowStr = new Date().toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+
+    const newReport: PelaporanFormData = {
+      id: `rep-${Date.now()}`,
+      timestamp: nowStr,
+      isOrmawaActive,
+      ormawaActivitiesText,
+      ormawaProofUrl: ormawaProofUrl.trim() || "https://drive.google.com/file/d/bukti_ormawa.pdf",
+      ormawaInactiveReason: isOrmawaActive === "Tidak Aktif" ? ormawaInactiveReason : undefined,
+      whatsappGroupProofUrl: whatsappGroupProofUrl.trim() || undefined,
+      scholarshipReportUrl: scholarshipReportUrl.trim() || undefined,
+
+      competitionCount,
+      noCompetitionReason: competitionCount === "0" ? noCompetitionReason : undefined,
+      noCompetitionStatementUrl: competitionCount === "0" ? noCompetitionStatementUrl : undefined,
+
+      comp1Rank: competitionCount !== "0" ? comp1Rank : undefined,
+      comp1Level: competitionCount !== "0" ? comp1Level : undefined,
+      comp1Category: competitionCount !== "0" ? comp1Category : undefined,
+      comp1Title: competitionCount !== "0" ? comp1Title : undefined,
+      comp1Organizer: competitionCount !== "0" ? comp1Organizer : undefined,
+      comp1UniversitiesCount: competitionCount !== "0" ? comp1UniversitiesCount : undefined,
+      comp1ParticipantsCount: competitionCount !== "0" ? comp1ParticipantsCount : undefined,
+      comp1ParticipationType: competitionCount !== "0" ? comp1ParticipationType : undefined,
+      comp1EventType: competitionCount !== "0" ? comp1EventType : undefined,
+      comp1Url: competitionCount !== "0" ? comp1Url : undefined,
+      comp1CertDate: competitionCount !== "0" ? comp1CertDate : undefined,
+      comp1CertDocUrl: competitionCount !== "0" ? comp1CertDocUrl : undefined,
+      comp1DocumentationUrl: competitionCount !== "0" ? comp1DocumentationUrl : undefined,
+      comp1InvitationDocUrl: competitionCount !== "0" ? comp1InvitationDocUrl : undefined,
+
+      isDataValidConfirmed: true,
+      status: "Menunggu Review",
+      score: calculateTotalScore(),
+      notes: "Menunggu review dan validasi data laporan oleh Admin Kemahasiswaan."
+    };
+
+    const updated = [newReport, ...savedReports];
+    setSavedReports(updated);
+    localStorage.setItem("semadiksi_pelaporan_kipk_forms", JSON.stringify(updated));
+
+    setTimeout(() => {
+      setIsSubmitting(false);
+      alert("Formulir Pelaporan Beasiswa KIP-K Anda berhasil terkirim!");
+      setActiveTab("submitted");
+    }, 600);
+  };
 
   if (currentUser && currentUser.kipStatus !== "KIP UNUSA") {
     return (
@@ -278,7 +341,7 @@ export default function PelaporanPage() {
         <span className="material-symbols-outlined text-error text-6xl">warning</span>
         <h2 className="text-2xl font-bold text-on-surface">Akses Terbatas</h2>
         <p className="text-on-surface-variant text-sm leading-relaxed max-w-sm">
-          Halaman unggah berkas pelaporan ini khusus bagi mahasiswa penerima beasiswa KIP-K UNUSA.
+          Halaman unggah pelaporan keaktifan beasiswa KIP-K ini khusus bagi mahasiswa penerima KIP UNUSA.
         </p>
         <div className="pt-2">
           <Link href="/dashboard" className="inline-block px-6 py-3 bg-primary text-white font-bold rounded-full text-xs shadow-md active:scale-95 transition-all">
@@ -289,248 +352,253 @@ export default function PelaporanPage() {
     );
   }
 
+  const berkasScore = getWeightedBerkasScore();
+  const latestReportScore = berkasScore > 0 ? berkasScore : (savedReports.length > 0 ? savedReports[0].score : calculateTotalScore());
+  const canGetQueue = latestReportScore >= 80;
+
   return (
-    <div className="max-w-4xl mx-auto px-margin-mobile md:px-margin-desktop py-lg space-y-lg relative">
-      {/* Header */}
-      <section className="space-y-md">
-        <div>
-          <h2 className="font-display text-3xl md:text-4xl font-extrabold text-on-surface leading-tight">
-            Upload Berkas Pelaporan
-          </h2>
-          <p className="text-on-surface-variant mt-2 font-body-md text-base">
-            Unggah sertifikat/surat keterangan untuk mengklaim poin keaktifan non-akademik beasiswa KIP-K.
+    <div className="p-margin-mobile md:p-margin-desktop space-y-6 max-w-6xl mx-auto py-6">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-br from-primary/15 via-surface to-surface-container-low border border-primary/25 rounded-3xl p-6 md:p-8 shadow-sm relative overflow-hidden">
+        <div className="max-w-3xl space-y-3 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-primary/15 text-primary rounded-full text-xs font-bold border border-primary/30">
+            <span className="material-symbols-outlined text-[16px]">description</span>
+            <span>Formulir Pelaporan Beasiswa KIP Kuliah UNUSA</span>
+          </div>
+          <h1 className="font-display text-2xl md:text-3xl font-extrabold text-on-surface">
+            Form Pelaporan Beasiswa KIPK
+          </h1>
+          <p className="text-xs md:text-sm text-on-surface-variant leading-relaxed">
+            Isikan data keikutsertaan perlombaan dan bukti keaktifan Anda sesuai dengan kolom formulir resmi spreadsheet Biro Kemahasiswaan UNUSA.
           </p>
         </div>
-      </section>
+      </div>
 
-      {/* Queue Number Panel */}
-      <section className="bg-surface-container-lowest border border-surface-variant/30 rounded-3xl p-6 shadow-sm space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      {/* Step Navigation Tabs */}
+      <div className="flex items-center justify-between bg-surface border border-surface-variant/30 rounded-2xl p-2 shadow-xs overflow-x-auto">
+        <div className="flex gap-2 min-w-max">
+          <Link
+            href="/dashboard/pengajuan-pencairan"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold text-on-surface-variant hover:bg-surface-container-high transition-all"
+          >
+            <span className="material-symbols-outlined text-base">payments</span>
+            <span>Tahap 1: Pengajuan Pencairan Beasiswa</span>
+          </Link>
+          <Link
+            href="/dashboard/pelaporan"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold bg-primary text-white shadow-xs"
+          >
+            <span className="material-symbols-outlined text-base">description</span>
+            <span>Tahap 2: Pelaporan Keaktifan & Lomba</span>
+          </Link>
+          <Link
+            href="/dashboard/monev-akademik"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold text-on-surface-variant hover:bg-surface-container-high transition-all"
+          >
+            <span className="material-symbols-outlined text-base">analytics</span>
+            <span>Tahap 3: Monev Akademik & Ekonomi</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* STEP 2 RESTRICTION LOCK SCREEN */}
+      {!hasCompletedStep1 ? (
+        <div className="bg-amber-500/10 border-2 border-amber-500/30 rounded-3xl p-8 md:p-12 text-center space-y-5 max-w-2xl mx-auto shadow-md my-8 animate-in fade-in duration-200">
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-700 flex items-center justify-center mx-auto shadow-inner">
+            <span className="material-symbols-outlined text-3xl">lock</span>
+          </div>
           <div className="space-y-2">
-            <h3 className="font-bold text-lg text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">assignment_turned_in</span>
-              <span>Nomor Antrean Verifikasi KIP-K</span>
+            <span className="px-3 py-1 bg-amber-500/20 text-amber-800 rounded-full text-xs font-bold uppercase tracking-wider">
+              Akses Terkunci
+            </span>
+            <h3 className="text-xl md:text-2xl font-extrabold text-on-surface">
+              Anda Belum Mengisi Tahap 1: Pengajuan Pencairan
             </h3>
-            <p className="text-xs text-on-surface-variant max-w-xl">
-              Mahasiswa wajib memiliki akumulasi skor penilaian kelayakan berkas laporan keaktifan **minimal 80%** untuk dapat mengambil nomor antrean wawancara fisik KIP-K.
+            <p className="text-xs md:text-sm text-on-surface-variant leading-relaxed max-w-lg mx-auto">
+              Mahasiswa KIP-K diwajibkan menyelesaikan dan mengirim <strong>Formulir Pengajuan Pencairan Beasiswa KIP-K (Tahap 1)</strong> terlebih dahulu sebelum dapat mengakses dan mengisikan Formulir Pelaporan Keaktifan & Lomba (Tahap 2).
             </p>
           </div>
-          <div className="flex flex-col items-center p-3 rounded-2xl bg-surface-container-low border border-surface-variant/20 shadow-inner shrink-0 w-full md:w-44 text-center">
-            <span className="text-[10px] font-bold text-outline uppercase tracking-wider block">Akumulasi Nilai</span>
-            <span className={`text-3xl font-extrabold mt-1 block ${canGetQueue ? "text-primary" : "text-error"}`}>
-              {avgScore}%
-            </span>
-            <span className={`text-[10px] mt-1 font-bold ${canGetQueue ? "text-primary" : "text-error"}`}>
-              {canGetQueue ? "Syarat Terpenuhi" : "Syarat < 80% Belum Terpenuhi"}
-            </span>
+          <div className="pt-3">
+            <Link
+              href="/dashboard/pengajuan-pencairan"
+              className="inline-flex items-center gap-2 px-6 py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-full text-xs shadow-lg transition-all active:scale-95 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm">payments</span>
+              <span>Lanjut Mengisi Tahap 1: Pengajuan Pencairan</span>
+            </Link>
           </div>
         </div>
+      ) : (
+        <>
 
-        {queueNumber ? (
-          /* Active Queue Slip */
-          <div className="border border-primary/30 rounded-2xl bg-primary/5 p-6 flex flex-col items-center justify-center space-y-4 max-w-md mx-auto relative overflow-hidden shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-primary"></div>
-            <span className="font-mono text-[9px] tracking-widest text-primary font-bold uppercase">ANTREAN VERIFIKASI AKTIF</span>
-            
-            <div className="text-center">
-              <h4 className="text-4xl font-black text-primary tracking-wide">{queueNumber}</h4>
-              <p className="text-[10px] text-on-surface-variant mt-1">Dibuat pada: {queueTime}</p>
-            </div>
 
-            <div className="w-full text-xs space-y-2 border-t border-b border-primary/20 py-4 my-2 text-on-surface-variant">
-              <div className="flex justify-between">
-                <span>Nama Mahasiswa:</span>
-                <strong className="text-on-surface">{currentUser?.name || "Ahmad Fauzan"}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>Program Studi:</span>
-                <strong className="text-on-surface">S1 Sistem Informasi</strong>
-              </div>
-              <div className="flex justify-between">
-                <span>Lokasi Loket:</span>
-                <strong className="text-on-surface">Ruang Rektorat, Kampus B UNUSA</strong>
-              </div>
-            </div>
-
-            <div className="flex gap-3 w-full">
+          {/* Tabs Bar */}
+          <div className="flex items-center justify-between bg-surface border border-surface-variant/30 rounded-2xl p-2 shadow-xs">
+            <div className="flex gap-2">
               <button
-                onClick={() => window.print()}
-                className="flex-1 py-2 bg-primary text-on-primary hover:brightness-110 rounded-xl text-xs font-bold transition-all shadow cursor-pointer text-center"
+                onClick={() => setActiveTab("form")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                  activeTab === "form" ? "bg-primary text-white shadow-xs" : "text-on-surface-variant hover:bg-surface-container-high"
+                }`}
               >
-                Cetak Slip
+                <span className="material-symbols-outlined text-base">edit_note</span>
+                <span>Isi Formulir Pelaporan Baru</span>
               </button>
+
               <button
-                onClick={handleCancelQueue}
-                className="flex-1 py-2 border border-error text-error hover:bg-error/10 rounded-xl text-xs font-bold transition-all cursor-pointer text-center"
+                onClick={() => setActiveTab("submitted")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all ${
+                  activeTab === "submitted" ? "bg-primary text-white shadow-xs" : "text-on-surface-variant hover:bg-surface-container-high"
+                }`}
               >
-                Batalkan Antrean
+                <span className="material-symbols-outlined text-base">history</span>
+                <span>Riwayat Pelaporan Terkirim ({savedReports.length})</span>
               </button>
             </div>
           </div>
-        ) : (
-          /* Locked / Unlocked Button */
-          <div className="p-4 rounded-2xl bg-surface-container-low border border-surface-variant/20 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-3">
-              <span className={`material-symbols-outlined text-3xl ${canGetQueue ? "text-primary" : "text-error"}`}>
-                {canGetQueue ? "lock_open" : "lock"}
-              </span>
-              <div>
-                <p className="text-sm font-bold text-on-surface">
-                  {canGetQueue ? "Tombol Antrean Terbuka!" : "Tombol Antrean Terkunci"}
-                </p>
-                <p className="text-xs text-on-surface-variant mt-0.5">
-                  {canGetQueue 
-                    ? "Nilai Anda sudah mencapai syarat. Silakan ambil nomor antrean Anda sekarang." 
-                    : "Silakan perbaiki berkas yang dinilai rendah atau lengkapi berkas kosong untuk menaikkan nilai."}
+
+          {/* TAB 1: FORMULIR PELAPORAN (DYNAMIC GOOGLE FORM) */}
+          {activeTab === "form" && (
+            <DynamicGoogleForm
+              formKey="pelaporan"
+              defaultQuestions={INITIAL_PELAPORAN_QUESTIONS}
+              formTitle="Formulir Pelaporan Keaktifan & Lomba KIP-K UNUSA"
+              formSubtitle="Silakan lengkapi status keaktifan organisasi Ormawa/UKM serta rincian karya dan prestasi perlombaan semester ini."
+              submitButtonText="Kirimkan Laporan Keaktifan KIP-K"
+              isSubmitting={isSubmitting}
+              onSubmit={handleDynamicFormSubmit}
+            />
+          )}
+
+          {/* TAB 2: RIWAYAT LAPORAN TERKIRIM */}
+          {activeTab === "submitted" && (
+            <div className="bg-surface border border-surface-variant/30 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+              <div className="border-b border-surface-variant/20 pb-4">
+                <h3 className="font-bold text-on-surface text-base md:text-lg flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">history</span>
+                  Daftar Riwayat Pelaporan KIP-K Terkirim
+                </h3>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Seluruh berkas laporan yang dikirimkan telah terarsip sesuai struktur kolom spreadsheet admin.
                 </p>
               </div>
-            </div>
 
-            <button
-              disabled={!canGetQueue}
-              onClick={handleGetQueueNumber}
-              className={`px-6 py-3 rounded-full font-bold text-xs shadow-md transition-all active:scale-95 whitespace-nowrap cursor-pointer
-                ${canGetQueue 
-                  ? "bg-primary text-on-primary hover:brightness-110" 
-                  : "bg-surface-variant text-on-surface-variant/50 cursor-not-allowed shadow-none"}`}
-            >
-              Ambil Nomor Antrean
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* Upload Categories Grid */}
-      <section className="space-y-4">
-        {files.map((file) => {
-          const colors: { [key: string]: string } = {
-            "Disetujui": "bg-primary/10 border-primary text-primary",
-            "Perlu Perbaikan": "bg-error/10 border-error text-error",
-            "Menunggu Review": "bg-secondary-container/30 border-secondary-container text-on-secondary-container",
-            "Belum Ada Berkas": "bg-surface-variant/20 border-surface-variant/40 text-on-surface-variant"
-          };
-
-          const isApproved = file.status === "Disetujui";
-          const isPending = file.status === "Menunggu Review";
-          const isRejected = file.status === "Perlu Perbaikan";
-
-          return (
-            <div
-              key={file.id}
-              className={`bg-surface-container-lowest border rounded-3xl p-5 md:p-6 shadow-sm space-y-4 transition-all hover:shadow-md
-                ${isApproved ? "border-primary/20" : isRejected ? "border-error/20" : isPending ? "border-secondary-container/20" : "border-surface-variant/30"}`}
-            >
-              {/* Category Header */}
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div className="space-y-1">
-                  <h4 className="font-bold text-base text-on-surface flex items-center gap-2">
-                    <span>{file.title}</span>
-                    <span className={`px-2.5 py-0.5 border rounded-full text-[10px] font-bold ${colors[file.status]}`}>
-                      {file.status}
-                    </span>
-                  </h4>
-                  <p className="text-xs text-on-surface-variant">{file.description}</p>
-                  {file.downloadTemplate && (
-                    <a
-                      href={file.downloadTemplate}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline mt-1"
+              <div className="space-y-4">
+                {savedReports.map((rep) => {
+                  const isApproved = rep.status === "Disetujui";
+                  return (
+                    <div
+                      key={rep.id}
+                      className={`bg-surface-container-lowest border rounded-3xl p-6 space-y-4 transition-all hover:shadow-md ${
+                        isApproved ? "border-primary/30" : "border-surface-variant/30"
+                      }`}
                     >
-                      <span className="material-symbols-outlined text-[12px]">download</span>
-                      Download Template Surat Tanda Aktif
-                    </a>
-                  )}
-                </div>
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-surface-variant/20 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold text-outline">{rep.timestamp}</span>
+                          <span
+                            className={`px-3 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${
+                              isApproved
+                                ? "bg-primary/10 border-primary/20 text-primary"
+                                : "bg-amber-500/10 border-amber-500/20 text-amber-700"
+                            }`}
+                          >
+                            {rep.status}
+                          </span>
+                        </div>
 
-                {/* File Upload Selector Column */}
-                <div className="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    {/* File input trigger */}
-                    <div className="relative overflow-hidden flex-1 sm:flex-none">
-                      <button className="w-full sm:w-auto px-4 py-2 border border-surface-variant text-on-surface-variant hover:bg-surface-variant/15 rounded-xl font-bold text-xs flex items-center gap-1.5 justify-center cursor-pointer transition-all">
-                        <span className="material-symbols-outlined text-[16px]">folder_open</span>
-                        <span>Pilih Berkas</span>
-                      </button>
-                      <input
-                        type="file"
-                        onChange={(e) => {
-                          const fileObj = e.target.files?.[0];
-                          if (fileObj) {
-                            handleFileChange(file.id, fileObj.name);
-                          }
-                        }}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      />
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold text-on-surface">Skor: {rep.score}%</span>
+                          {isApproved ? (
+                            <span className="flex items-center gap-1 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-xs shadow-2xs">
+                              <span className="material-symbols-outlined text-[16px]">lock</span>
+                              <span>Terkunci & Validated</span>
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl font-bold text-xs">
+                              Dalam Proses Review
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                        <div className="space-y-1 bg-surface-container-low p-3.5 rounded-2xl border border-surface-variant/20">
+                          <p className="text-outline font-bold uppercase text-[10px]">1. Laporan Keaktifan Ormawa & Group</p>
+                          <p className="font-bold text-on-surface">{rep.isOrmawaActive}</p>
+                          <p className="text-on-surface-variant italic">{rep.ormawaActivitiesText}</p>
+                          <div className="pt-2 border-t border-surface-variant/20 space-y-1">
+                            {rep.ormawaProofUrl && (
+                              <a href={rep.ormawaProofUrl} target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline block">
+                                📎 Bukti SK Ormawa (Drive)
+                              </a>
+                            )}
+                            {rep.whatsappGroupProofUrl && (
+                              <a href={rep.whatsappGroupProofUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-800 font-bold hover:underline block">
+                                📱 Screenshot Grup WA KIP-K (Drive)
+                              </a>
+                            )}
+                            {rep.scholarshipReportUrl && (
+                              <a href={rep.scholarshipReportUrl} target="_blank" rel="noopener noreferrer" className="text-purple-800 font-bold hover:underline block">
+                                📄 File Laporan Beasiswa (Drive)
+                              </a>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 bg-surface-container-low p-3.5 rounded-2xl border border-surface-variant/20">
+                          <p className="text-outline font-bold uppercase text-[10px]">2. Laporan Keikutsertaan Kompetisi (Spreadsheet Data)</p>
+                          {rep.competitionCount === "0" ? (
+                            <p className="text-on-surface-variant italic">Tidak mengikuti kompetisi semester ini.</p>
+                          ) : (
+                            <>
+                              <p className="font-bold text-on-surface text-sm">{rep.comp1Title}</p>
+                              <p className="text-on-surface-variant">
+                                {rep.comp1Organizer} • <strong className="text-primary">{rep.comp1Rank}</strong> ({rep.comp1Level} - {rep.comp1Category})
+                              </p>
+                              <p className="text-[11px] text-outline">
+                                Peserta: {rep.comp1ParticipantsCount} • PT/Negara: {rep.comp1UniversitiesCount}
+                              </p>
+
+                              <div className="pt-2 border-t border-surface-variant/20 space-y-1">
+                                {rep.comp1CertDocUrl && (
+                                  <a href={rep.comp1CertDocUrl} target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline block">
+                                    📜 Dokumen Sertifikat (Drive)
+                                  </a>
+                                )}
+                                {rep.comp1DocumentationUrl && (
+                                  <a href={rep.comp1DocumentationUrl} target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline block">
+                                    📷 Dokumentasi Pemenang / Penyerahan (Drive)
+                                  </a>
+                                )}
+                                {rep.comp1InvitationDocUrl && (
+                                  <a href={rep.comp1InvitationDocUrl} target="_blank" rel="noopener noreferrer" className="text-primary font-bold hover:underline block">
+                                    ✉️ Dokumen Undangan (Drive)
+                                  </a>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {rep.notes && (
+                        <div className="p-3 rounded-2xl bg-neutral-50 border border-neutral-100 text-xs flex items-start gap-2 text-on-surface-variant">
+                          <span className="material-symbols-outlined text-base shrink-0 mt-0.5 text-primary">comment</span>
+                          <div>
+                            <strong className="block font-bold text-on-surface">Catatan Verifikator Admin:</strong>
+                            <p className="mt-0.5">{rep.notes}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {file.fileName && (
-                      <button
-                        onClick={() => handleRemoveFile(file.id)}
-                        className="px-3.5 py-2 border border-error text-error hover:bg-error/10 rounded-xl cursor-pointer flex items-center justify-center transition-all"
-                        title="Hapus Berkas"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Selected / Current File Name */}
-                  <span className="text-[11px] text-on-surface-variant italic truncate max-w-[200px]">
-                    {selectedFileForUpload[file.id] ? (
-                      <span className="text-primary font-bold">Terpilih: {selectedFileForUpload[file.id]}</span>
-                    ) : file.fileName ? (
-                      <span>File saat ini: {file.fileName}</span>
-                    ) : (
-                      "Belum ada file dipilih"
-                    )}
-                  </span>
-                </div>
+                  );
+                })}
               </div>
-
-              {/* Progress score bar */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-[10px] font-bold text-on-surface-variant">
-                  <span>SKOR PENILAIAN</span>
-                  <span className={isApproved ? "text-primary" : isRejected ? "text-error" : "text-outline"}>
-                    {file.score}%
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-neutral-100 rounded-full overflow-hidden border border-neutral-200/50">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500
-                      ${isApproved ? "bg-primary" : isRejected ? "bg-error" : "bg-primary/50"}`}
-                    style={{ width: `${file.score}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Catatan Admin */}
-              {file.notes && (
-                <div className={`p-3 rounded-2xl text-xs space-y-1 border flex items-start gap-2
-                  ${isApproved ? "bg-primary/5 border-primary/20 text-on-surface" : isRejected ? "bg-error/5 border-error/20 text-on-surface" : "bg-neutral-50 border-neutral-100 text-on-surface-variant"}`}>
-                  <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5">comment</span>
-                  <div>
-                    <strong className="block font-bold">Catatan Admin:</strong>
-                    <p className="mt-0.5">{file.notes}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Submit File Button */}
-              {selectedFileForUpload[file.id] && (
-                <div className="flex justify-end animate-in fade-in slide-in-from-top-1 duration-200">
-                  <button
-                    onClick={() => handleUpload(file.id)}
-                    className="px-5 py-2.5 bg-primary text-on-primary hover:brightness-110 rounded-xl font-bold text-xs shadow flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">send</span>
-                    <span>Ajukan Berkas</span>
-                  </button>
-                </div>
-              )}
             </div>
-          );
-        })}
-      </section>
+          )}
+        </>
+      )}
     </div>
   );
 }

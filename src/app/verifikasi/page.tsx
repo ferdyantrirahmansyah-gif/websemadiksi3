@@ -4,13 +4,20 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
+interface SignatoryItem {
+  name: string;
+  nipNim: string;
+  type: "NIP" | "NIM";
+}
+
 interface ValidCert {
   code: string;
   title: string;
+  recipientName: string;
   author: string;
   hash: string;
   date: string;
-  signatories: string[];
+  signatories: SignatoryItem[];
 }
 
 function VerifikasiContent() {
@@ -26,26 +33,38 @@ function VerifikasiContent() {
     {
       code: "CERT-LKMB-2024-0891",
       title: "Sertifikat Latihan Kepemimpinan Mahasiswa Berprestasi (LKMB)",
+      recipientName: "Ahmad Fauzan",
       author: "SEMADIKSI Divisi Keorganisasian",
       hash: "e566c805ba07b8c6869e1f37847d0287",
       date: "2024-11-16 09:12:05",
-      signatories: ["Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", "Muhammad Fatih (Ketua Umum SEMADIKSI)"]
+      signatories: [
+        { name: "Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", nipNim: "197508122002121001", type: "NIP" },
+        { name: "Muhammad Fatih (Ketua Umum SEMADIKSI)", nipNim: "3130021045", type: "NIM" }
+      ]
     },
     {
       code: "CERT-VOL-2024-1102",
       title: "Sertifikat Volunteer Mengajar Pesisir - SEMADIKSI Berbagi",
+      recipientName: "Siti Nurhaliza",
       author: "SEMADIKSI Divisi Pengabdian Masyarakat",
       hash: "8c7a6e112d88f6c99c5d01243170e881",
       date: "2024-10-13 14:35:10",
-      signatories: ["Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", "Fauzi Rahmat (Ketua Divisi Pengabdian)"]
+      signatories: [
+        { name: "Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", nipNim: "197508122002121001", type: "NIP" },
+        { name: "Fauzi Rahmat (Ketua Divisi Pengabdian)", nipNim: "2140021088", type: "NIM" }
+      ]
     },
     {
       code: "CERT-WD-2024-0345",
       title: "Sertifikat Workshop Web Development Modern dengan Next.js",
+      recipientName: "Muhammad Ilham",
       author: "SEMADIKSI Divisi IPTEK & Humas",
       hash: "f566c805ba07b8c6869e1f37847d0345",
       date: "2024-09-05 16:40:02",
-      signatories: ["Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", "Ferdian W. (Senior Frontend Engineer / Pemateri)"]
+      signatories: [
+        { name: "Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", nipNim: "197508122002121001", type: "NIP" },
+        { name: "Ferdian W. (Senior Frontend Engineer / Pemateri)", nipNim: "198805202015041002", type: "NIP" }
+      ]
     }
   ];
 
@@ -74,10 +93,14 @@ function VerifikasiContent() {
           const mockCert: ValidCert = {
             code: adminCert.code,
             title: `Sertifikat Kegiatan: ${adminCert.activityTitle}`,
+            recipientName: adminCert.recipientName || adminCert.studentName || "Ahmad Fauzan",
             author: "SEMADIKSI Panitia Pelaksana",
             hash: `h${Math.random().toString(16).substring(2, 10)}${Math.random().toString(16).substring(2, 10)}8e1f37847d0287`,
             date: `${adminCert.dateUploaded} 17:00:00`,
-            signatories: ["Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", "Muhammad Fatih (Ketua Umum SEMADIKSI)"]
+            signatories: [
+              { name: "Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", nipNim: "197508122002121001", type: "NIP" },
+              { name: "Muhammad Fatih (Ketua Umum SEMADIKSI)", nipNim: "3130021045", type: "NIM" }
+            ]
           };
           setMatchedCert(mockCert);
           setIsValidCode(true);
@@ -95,10 +118,14 @@ function VerifikasiContent() {
           const mockCert: ValidCert = {
             code: matchStudent.code,
             title: matchStudent.title,
+            recipientName: matchStudent.recipientName || matchStudent.studentName || "Ahmad Fauzan",
             author: matchStudent.organizer || "SEMADIKSI Panitia Pelaksana",
             hash: `d8b5c${Math.random().toString(16).substring(2, 12)}e1f37847d0287`,
             date: `${matchStudent.date} 16:30:00`,
-            signatories: ["Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", "Muhammad Fatih (Ketua Umum SEMADIKSI)"]
+            signatories: [
+              { name: "Dr. Ir. Wahyu Utomo, M.Si. (Pembina SEMADIKSI)", nipNim: "197508122002121001", type: "NIP" },
+              { name: "Muhammad Fatih (Ketua Umum SEMADIKSI)", nipNim: "3130021045", type: "NIM" }
+            ]
           };
           setMatchedCert(mockCert);
           setIsValidCode(true);
@@ -226,6 +253,16 @@ function VerifikasiContent() {
                       </span>
                     </div>
 
+                    <div className="grid grid-cols-3 py-3 items-center">
+                      <span className="text-slate-400">Nama Penerima</span>
+                      <span className="col-span-2 font-bold text-slate-900 text-sm flex items-center gap-2">
+                        <span>{matchedCert.recipientName}</span>
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[11px] border border-blue-200 font-bold">
+                          Penerima Sah
+                        </span>
+                      </span>
+                    </div>
+
                     <div className="grid grid-cols-3 py-3">
                       <span className="text-slate-400">Judul Dokumen</span>
                       <span className="col-span-2 font-bold text-slate-800">{matchedCert.title}</span>
@@ -261,7 +298,7 @@ function VerifikasiContent() {
                       <thead>
                         <tr className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
                           <th className="p-3 w-10 text-center">NO</th>
-                          <th className="p-3 w-20 text-center">REQUEST</th>
+                          <th className="p-3 w-48 text-center">NIP / NIM</th>
                           <th className="p-3">NAMA PENANDATANGAN</th>
                           <th className="p-3 w-44">TANGGAL</th>
                           <th className="p-3 w-20 text-center">CERTIFIED</th>
@@ -272,8 +309,16 @@ function VerifikasiContent() {
                         {matchedCert.signatories.map((sig, idx) => (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
                             <td className="p-3 text-center">{idx + 1}</td>
-                            <td className="p-3 text-center font-bold text-slate-500 bg-slate-50/50">TTE</td>
-                            <td className="p-3 text-slate-800 font-bold">{sig}</td>
+                            <td className="p-3 text-center font-mono text-xs font-bold text-slate-700 bg-slate-50/50">
+                              <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                                sig.type === "NIP"
+                                  ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                                  : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              }`}>
+                                {sig.type}. {sig.nipNim}
+                              </span>
+                            </td>
+                            <td className="p-3 text-slate-800 font-bold">{sig.name}</td>
                             <td className="p-3 text-slate-500 flex items-center gap-1">
                               <span>{matchedCert.date}</span>
                               <span className="material-symbols-outlined text-emerald-600 text-[14px] font-bold">check</span>

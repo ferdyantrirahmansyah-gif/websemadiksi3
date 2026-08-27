@@ -108,50 +108,24 @@ export default function ProfilSemadiksi() {
           </Link>
           <Link
             className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md"
-            href="/dashboard/kegiatan"
+            href="/berita-acara"
           >
-            Kegiatan
-          </Link>
-          <Link
-            className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md"
-            href="/dashboard/pembayaran"
-          >
-            Tiket
+            Berita Acara
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
-          {currentUser ? (
-            <div className="flex items-center gap-3">
-              <span className="font-label-md text-label-md text-on-surface font-semibold hidden sm:inline">
-                {currentUser.name}
-              </span>
-              <Link
-                href="/dashboard"
-                className="w-10 h-10 rounded-full border-2 border-primary/20 overflow-hidden cursor-pointer hover:border-primary transition-all duration-200"
-              >
-                <img
-                  className="w-full h-full object-cover"
-                  alt="Profile"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuByC13lRV-RXOv0wxz5CEddVyXFPn7mB78UwyO78hHTtw4oLda25cFIDyqFxXT2Ws2_cX6amMuQrpkkGD6wl5NvmOJsYF0GOSFS2fTiCDEo5Y5DUay0oKKExRn2MZzQfii3KkLuzsbFdtVFizHLSVi6mPtbSzi02TB9n3sh2r66X7yxUb4uochJZwj-CZNAe4RRqFxSFFNv7Vgrrobo0XFEQpFj2PKdh3MZs4QqcA6dfslUx7ijmZxWdQ"
-                />
-              </Link>
-            </div>
-          ) : (
-            <>
-              <Link
-                href="/masuk"
-                className="hidden sm:inline-block font-label-md text-label-md text-primary hover:underline"
-              >
-                Masuk
-              </Link>
-              <Link
-                href="/daftar"
-                className="bg-primary text-on-primary px-6 py-2.5 rounded-full font-label-md text-label-md hover:brightness-110 active:scale-95 transition-all shadow-sm"
-              >
-                Daftar
-              </Link>
-            </>
-          )}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link
+            href="/masuk"
+            className="hidden sm:inline-block font-label-md text-label-md text-primary hover:underline font-semibold"
+          >
+            Masuk
+          </Link>
+          <Link
+            href="/daftar"
+            className="bg-primary text-on-primary px-5 sm:px-6 py-2.5 rounded-full font-label-md text-label-md hover:brightness-110 active:scale-95 transition-all shadow-sm font-semibold"
+          >
+            Daftar
+          </Link>
         </div>
       </header>
 

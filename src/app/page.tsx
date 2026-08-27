@@ -5,8 +5,16 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    const userStr = localStorage.getItem("semadiksi_current_user");
+    if (userStr) {
+      try {
+        setCurrentUser(JSON.parse(userStr));
+      } catch (e) {}
+    }
+
     // Floating hover effect for blobs
     const handleMouseMove = (e: MouseEvent) => {
       const blobs = document.querySelectorAll(".organic-blob");
@@ -46,7 +54,7 @@ export default function Home() {
         </div>
         <nav className="hidden lg:flex items-center gap-8">
           <Link
-            className="text-primary font-bold font-label-md text-label-md"
+            className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md"
             href="/"
           >
             Beranda
@@ -59,40 +67,23 @@ export default function Home() {
           </Link>
           <Link
             className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md"
-            href="/dashboard/kegiatan"
+            href="/berita-acara"
           >
-            Kegiatan
-          </Link>
-          <Link
-            className="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md"
-            href="/dashboard/pembayaran"
-          >
-            Tiket
+            Berita Acara
           </Link>
         </nav>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link
             href="/masuk"
-            className="hidden sm:inline-block font-label-md text-label-md text-primary hover:underline"
+            className="hidden sm:inline-block font-label-md text-label-md text-primary hover:underline font-semibold"
           >
             Masuk
           </Link>
           <Link
             href="/daftar"
-            className="bg-primary text-on-primary px-6 py-2.5 rounded-full font-label-md text-label-md hover:brightness-110 active:scale-95 transition-all shadow-sm"
+            className="bg-primary text-on-primary px-5 sm:px-6 py-2.5 rounded-full font-label-md text-label-md hover:brightness-110 active:scale-95 transition-all shadow-sm font-semibold"
           >
             Daftar
-          </Link>
-          <Link
-            href="/dashboard"
-            className="w-10 h-10 rounded-full border-2 border-primary/20 overflow-hidden cursor-pointer active:scale-95 duration-200"
-            title="Dashboard Siswa"
-          >
-            <img
-              className="w-full h-full object-cover"
-              alt="Profile"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGecAVV5ydKEYJ7CQWv_PX2yek_aKWI6guREujQxPbiIaAN4P57ZVxLVZFz4Nfm7c_14MPzONsdNyMCqjX3Pls9VPeX0_gd0Bppy_vTUEYTkowQVud7Kgj9psBTWwCqCxAvcA7c2lN8NQ_7kcOvYdWTxX7xHcXrTQYdHiFqQgTEPDAYI-W159rZdaOL3PyL7wi0b36vsqQ3w79osdO-FPbnk2iVB93uylufOl2ygAQV0dXTSDZnmLlig"
-            />
           </Link>
         </div>
       </header>
@@ -101,7 +92,7 @@ export default function Home() {
       {mobileMenuOpen && (
         <div className="lg:hidden fixed top-16 left-0 w-full bg-surface shadow-lg border-b border-surface-variant/20 z-30 p-md flex flex-col gap-sm">
           <Link
-            className="text-primary font-bold py-2 border-b border-surface-variant/10"
+            className="text-on-surface-variant py-2 border-b border-surface-variant/10"
             href="/"
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -116,17 +107,10 @@ export default function Home() {
           </Link>
           <Link
             className="text-on-surface-variant py-2 border-b border-surface-variant/10"
-            href="/dashboard/kegiatan"
+            href="/berita-acara"
             onClick={() => setMobileMenuOpen(false)}
           >
-            Kegiatan
-          </Link>
-          <Link
-            className="text-on-surface-variant py-2 border-b border-surface-variant/10"
-            href="/dashboard/pembayaran"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Tiket
+            Berita Acara
           </Link>
           <div className="flex gap-md pt-sm">
             <Link
@@ -164,10 +148,10 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-md">
               <Link
-                href="/dashboard/kegiatan"
+                href="/berita-acara"
                 className="w-full sm:w-auto bg-primary text-on-primary px-lg py-4 rounded-full font-label-md text-label-md hover:brightness-110 transition-all shadow-lg active:scale-95 text-center"
               >
-                Lihat Kegiatan
+                Lihat Berita Acara
               </Link>
               <Link
                 href="/profil-semadiksi"
@@ -308,10 +292,10 @@ export default function Home() {
                   Auditorium Lt. 9 Tower UNUSA
                 </p>
                 <Link
-                  href="/dashboard/pembayaran"
+                  href="/berita-acara"
                   className="w-full py-3 bg-surface-container text-primary rounded-xl font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center font-bold"
                 >
-                  Daftar Sekarang
+                  Lihat Berita Acara
                 </Link>
               </div>
             </div>
@@ -348,10 +332,10 @@ export default function Home() {
                   Panti Asuhan Surabaya
                 </p>
                 <Link
-                  href="/dashboard/pembayaran"
+                  href="/berita-acara"
                   className="w-full py-3 bg-surface-container text-primary rounded-xl font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center font-bold"
                 >
-                  Daftar Sekarang
+                  Lihat Berita Acara
                 </Link>
               </div>
             </div>
@@ -388,10 +372,10 @@ export default function Home() {
                   GOR Kampus B UNUSA
                 </p>
                 <Link
-                  href="/dashboard/pembayaran"
+                  href="/berita-acara"
                   className="w-full py-3 bg-surface-container text-primary rounded-xl font-label-md text-label-md hover:bg-primary-container hover:text-on-primary-container transition-all flex items-center justify-center font-bold"
                 >
-                  Daftar Sekarang
+                  Lihat Berita Acara
                 </Link>
               </div>
             </div>
