@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const user = userDb.findById(id);
+    const user = await userDb.findById(id);
     if (!user) {
       return NextResponse.json(
         { success: false, message: "User not found" },
@@ -34,7 +34,7 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
 
-    const updated = userDb.update(id, body);
+    const updated = await userDb.update(id, body);
     if (!updated) {
       return NextResponse.json(
         { success: false, message: "User not found" },
@@ -62,7 +62,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    userDb.delete(id);
+    await userDb.delete(id);
     return NextResponse.json({
       success: true,
       message: "User deleted successfully"

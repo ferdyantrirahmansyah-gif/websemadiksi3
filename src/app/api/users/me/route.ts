@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest) {
       updateFields.avatarUrl = avatarUrl;
     }
 
-    const updated = userDb.update(id, updateFields);
+    const updated = await userDb.update(id, updateFields);
 
     if (!updated) {
       return NextResponse.json(

@@ -25,12 +25,12 @@ export async function POST(req: NextRequest) {
 
     const cleanIdentity = identity.trim();
     
-    // Find user in SQLite database
-    let user = userDb.findByIdentity(cleanIdentity);
+    // Find user in Supabase database
+    let user = await userDb.findByIdentity(cleanIdentity);
 
     // If still not found, try exact email search
     if (!user && cleanIdentity.includes("@")) {
-      user = userDb.findByEmail(cleanIdentity);
+      user = await userDb.findByEmail(cleanIdentity);
     }
 
     // STRICT VALIDATION: If user is not found, REJECT LOGIN!

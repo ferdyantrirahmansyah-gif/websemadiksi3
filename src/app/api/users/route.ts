@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const allUsers = userDb.getAll();
+    const allUsers = await userDb.getAll();
     const safeUsers = allUsers.map(({ password, ...u }) => u);
 
     return NextResponse.json({
@@ -33,7 +33,7 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const updated = userDb.update(id, {
+    const updated = await userDb.update(id, {
       verificationStatus,
       isBlocked,
       role

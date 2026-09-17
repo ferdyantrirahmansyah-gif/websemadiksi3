@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const user = userDb.findById(payload.userId);
+    const user = await userDb.findById(payload.userId);
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Pengguna tidak ditemukan" },

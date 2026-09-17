@@ -32,8 +32,8 @@ export async function POST(req: NextRequest) {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Check if email already exists in SQLite database
-    const existingUser = userDb.findByEmail(cleanEmail);
+    // Check if email already exists in Supabase database
+    const existingUser = await userDb.findByEmail(cleanEmail);
     if (existingUser) {
       return NextResponse.json(
         { success: false, message: "Email ini sudah terdaftar! Silakan langsung login." },
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // Check if NIM already exists
     if (nim && nim.trim()) {
-      const existingNim = userDb.findByNim(nim.trim());
+      const existingNim = await userDb.findByNim(nim.trim());
       if (existingNim) {
         return NextResponse.json(
           { success: false, message: `NIM ${nim.trim()} sudah terdaftar atas nama ${existingNim.name}!` },
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       ? "Universitas Nahdlatul Ulama Surabaya"
       : (university?.trim() || "Universitas Nahdlatul Ulama Surabaya");
 
-    const user = userDb.create({
+    const user = await userDb.create({
       name: name.trim(),
       email: cleanEmail,
       password: password,
@@ -71,6 +71,13 @@ export async function POST(req: NextRequest) {
       role: cleanEmail === "admin123@gmail.com" ? "admin" : "student",
       isBlocked: 0
     });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "Gagal membuat pengguna baru di database" },
+        { status: 500 }
+      );
+    }
 
     const token = signJwt({
       userId: user.id,

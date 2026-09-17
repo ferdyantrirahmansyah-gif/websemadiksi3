@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = userDb.findById(userId);
+    const user = await userDb.findById(userId);
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Pengguna tidak ditemukan" },
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update to new password
-    userDb.update(userId, { password: newPassword });
+    await userDb.update(userId, { password: newPassword });
 
     return NextResponse.json({
       success: true,
