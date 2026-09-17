@@ -9,7 +9,7 @@ export default function Daftar() {
   const [kipStatus, setKipStatus] = useState("kipk");
   const [fullName, setFullName] = useState("");
   const [contact, setContact] = useState("");
-  const [university, setUniversity] = useState("");
+  const [university, setUniversity] = useState("Universitas Nahdlatul Ulama Surabaya");
   const [nim, setNim] = useState("");
   const [yearOfEntry, setYearOfEntry] = useState("");
   const [kipDocName, setKipDocName] = useState("");
@@ -24,47 +24,90 @@ export default function Daftar() {
   const [passwordFocus, setPasswordFocus] = useState(false);
   const [confirmPasswordFocus, setConfirmPasswordFocus] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
+
     if (password !== confirmPassword) {
-      alert("Password konfirmasi tidak cocok!");
+      setErrorMessage("Password konfirmasi tidak cocok!");
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage("Password minimal harus 6 karakter!");
       return;
     }
 
     if (kipStatus === "kipk" && !kipDocName) {
-      alert("Silakan unggah dokumen bukti penerima KIP-K terlebih dahulu!");
+      setErrorMessage("Silakan unggah dokumen bukti penerima KIP-K terlebih dahulu!");
       return;
     }
 
-    // Save registered user to semadiksi_users
-    try {
-      const storedUsers = localStorage.getItem("semadiksi_users");
-      const usersList = storedUsers ? JSON.parse(storedUsers) : [];
-      
-      const emailClean = contact.trim().toLowerCase();
-      if (!usersList.some((u: any) => u.email.toLowerCase() === emailClean)) {
-        usersList.push({
-          id: `usr-${Date.now()}`,
-          name: fullName,
-          email: emailClean,
-          university: university === "undip" ? "Universitas Diponegoro" :
-                      university === "unnes" ? "Universitas Negeri Semarang" :
-                      university === "upgris" ? "Universitas PGRI Semarang" :
-                      university === "uin" ? "UIN Walisongo" : "Lainnya",
-          kipStatus: kipStatus === "kipk" ? "KIP UNUSA" : "Umum",
-          verificationStatus: kipStatus === "kipk" ? "Pending" : "Verified",
-          password: password,
-          nim: nim,
-          yearOfEntry: yearOfEntry,
-          kipDocName: kipStatus === "kipk" ? kipDocName : undefined
-        });
-        localStorage.setItem("semadiksi_users", JSON.stringify(usersList));
-      }
-    } catch (err) {}
+    const emailClean = contact.trim().toLowerCase();
+    const effectiveUniversity =
+      kipStatus === "kipk"
+        ? "Universitas Nahdlatul Ulama Surabaya"
+        : university.trim() || "Universitas Nahdlatul Ulama Surabaya";
 
-    // Redirect to login on successful registry mock
-    alert("Akun berhasil dibuat! Silakan masuk.");
-    router.push("/masuk");
+    setIsSubmitting(true);
+
+    try {
+      // Send registration data to centralized SQLite database
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: fullName.trim(),
+          email: emailClean,
+          password: password,
+          nim: nim.trim(),
+          angkatan: yearOfEntry.trim(),
+          university: effectiveUniversity,
+          kipStatus: kipStatus === "kipk" ? "KIP UNUSA" : "Umum",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.message || "Gagal melakukan pendaftaran akun.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Sync registered user to localStorage for offline cache
+      try {
+        const storedUsers = localStorage.getItem("semadiksi_users");
+        const usersList = storedUsers ? JSON.parse(storedUsers) : [];
+
+        if (!usersList.some((u: any) => u.email.toLowerCase() === emailClean)) {
+          usersList.push({
+            id: data.user?.id || `usr-${Date.now()}`,
+            name: fullName.trim(),
+            email: emailClean,
+            university: effectiveUniversity,
+            kipStatus: kipStatus === "kipk" ? "KIP UNUSA" : "Umum",
+            verificationStatus: kipStatus === "kipk" ? "Pending" : "Verified",
+            password: password,
+            nim: nim.trim(),
+            yearOfEntry: yearOfEntry.trim(),
+            kipDocName: kipStatus === "kipk" ? kipDocName : undefined,
+          });
+          localStorage.setItem("semadiksi_users", JSON.stringify(usersList));
+        }
+      } catch (err) {}
+
+      alert("Pendaftaran akun berhasil! Akun Anda telah tersimpan di database. Silakan masuk.");
+      router.push("/masuk");
+    } catch (err: any) {
+      console.error("Register request error:", err);
+      setErrorMessage("Tidak dapat terhubung ke server pendaftaran. Coba lagi.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -89,6 +132,18 @@ export default function Daftar() {
 
         {/* Registration Card */}
         <section className="bg-surface-container-lowest border border-surface-variant/30 shadow-[0px_8px_30px_0px_rgba(13,99,27,0.08)] rounded-3xl p-md md:p-lg">
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-error-container/20 border border-error/30 rounded-2xl text-error text-sm font-medium flex items-start gap-3 animate-shake">
+              <span className="material-symbols-outlined text-[20px] text-error shrink-0 mt-0.5">
+                error
+              </span>
+              <div className="flex-1">
+                <p className="font-semibold text-error">Pendaftaran Gagal</p>
+                <p className="text-on-surface-variant text-xs mt-0.5">{errorMessage}</p>
+              </div>
+            </div>
+          )}
+
           <form className="space-y-md" onSubmit={handleSubmit}>
             {/* Status Mahasiswa Toggle */}
             <div className="space-y-sm">
@@ -97,12 +152,14 @@ export default function Daftar() {
               </label>
               <div className="grid grid-cols-2 gap-sm">
                 <button
-                  className={`flex items-center justify-center gap-2 p-md rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                    kipStatus === "kipk"
+                  className={`flex items-center justify-center gap-2 p-md rounded-xl border-2 transition-all duration-200 cursor-pointer ${kipStatus === "kipk"
                       ? "border-primary bg-primary-container/5 text-primary font-bold"
                       : "border-surface-variant bg-surface text-on-surface-variant font-medium"
-                  }`}
-                  onClick={() => setKipStatus("kipk")}
+                    }`}
+                  onClick={() => {
+                    setKipStatus("kipk");
+                    setUniversity("Universitas Nahdlatul Ulama Surabaya");
+                  }}
                   type="button"
                 >
                   <span
@@ -117,12 +174,13 @@ export default function Daftar() {
                   <span className="text-label-md">Mahasiswa KIP UNUSA</span>
                 </button>
                 <button
-                  className={`flex items-center justify-center gap-2 p-md rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                    kipStatus === "nonkip"
+                  className={`flex items-center justify-center gap-2 p-md rounded-xl border-2 transition-all duration-200 cursor-pointer ${kipStatus === "nonkip"
                       ? "border-primary bg-primary-container/5 text-primary font-bold"
                       : "border-surface-variant bg-surface text-on-surface-variant font-medium"
-                  }`}
-                  onClick={() => setKipStatus("nonkip")}
+                    }`}
+                  onClick={() => {
+                    setKipStatus("nonkip");
+                  }}
                   type="button"
                 >
                   <span
@@ -149,9 +207,8 @@ export default function Daftar() {
               </label>
               <div className="relative">
                 <span
-                  className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                    fullNameFocus ? "text-primary" : "text-outline"
-                  }`}
+                  className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${fullNameFocus ? "text-primary" : "text-outline"
+                    }`}
                 >
                   person
                 </span>
@@ -179,9 +236,8 @@ export default function Daftar() {
               </label>
               <div className="relative">
                 <span
-                  className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                    contactFocus ? "text-primary" : "text-outline"
-                  }`}
+                  className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${contactFocus ? "text-primary" : "text-outline"
+                    }`}
                 >
                   mail
                 </span>
@@ -201,42 +257,77 @@ export default function Daftar() {
 
             {/* Asal Universitas */}
             <div className="space-y-sm">
-              <label
-                className="font-label-md text-label-md text-on-surface-variant block ml-1 font-semibold"
-                htmlFor="university"
-              >
-                Asal Universitas
-              </label>
+              <div className="flex items-center justify-between ml-1">
+                <label
+                  className="font-label-md text-label-md text-on-surface-variant block font-semibold"
+                  htmlFor="university"
+                >
+                  Asal Universitas
+                </label>
+                {kipStatus === "kipk" && (
+                  <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-primary/20">
+                    <span className="material-symbols-outlined text-[13px]">lock</span>
+                    Terkunci (Khusus UNUSA)
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span
-                  className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                    universityFocus ? "text-primary" : "text-outline"
-                  }`}
+                  className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${universityFocus ? "text-primary" : "text-outline"
+                    }`}
                 >
                   account_balance
                 </span>
-                <select
-                  className="w-full pl-12 pr-10 py-4 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary focus:bg-white transition-all outline-none font-body-md text-on-surface appearance-none cursor-pointer"
+                <input
+                  className={`w-full pl-12 pr-11 py-4 rounded-xl transition-all outline-none font-body-md ${kipStatus === "kipk"
+                      ? "bg-surface-container/70 border border-primary/20 text-on-surface font-semibold cursor-not-allowed select-none"
+                      : "bg-surface-container-low border-none focus:ring-2 focus:ring-primary focus:bg-white text-on-surface"
+                    }`}
                   id="university"
-                  value={university}
-                  onChange={(e) => setUniversity(e.target.value)}
+                  placeholder={
+                    kipStatus === "kipk"
+                      ? "Universitas Nahdlatul Ulama Surabaya"
+                      : "Masukkan Asal Universitas"
+                  }
+                  type="text"
+                  value={
+                    kipStatus === "kipk"
+                      ? "Universitas Nahdlatul Ulama Surabaya"
+                      : university
+                  }
+                  onChange={(e) => {
+                    if (kipStatus !== "kipk") {
+                      setUniversity(e.target.value);
+                    }
+                  }}
+                  readOnly={kipStatus === "kipk"}
                   onFocus={() => setUniversityFocus(true)}
                   onBlur={() => setUniversityFocus(false)}
                   required
-                >
-                  <option value="" disabled>
-                    Pilih Universitas
-                  </option>
-                  <option value="undip">Universitas Diponegoro</option>
-                  <option value="unnes">Universitas Negeri Semarang</option>
-                  <option value="upgris">Universitas PGRI Semarang</option>
-                  <option value="uin">UIN Walisongo</option>
-                  <option value="other">Lainnya</option>
-                </select>
-                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">
-                  expand_more
-                </span>
+                />
+                {kipStatus === "kipk" ? (
+                  <span
+                    className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-primary/70 pointer-events-none"
+                    title="Terkunci untuk Mahasiswa KIP UNUSA"
+                  >
+                    lock
+                  </span>
+                ) : (
+                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline/60 pointer-events-none text-sm">
+                    edit
+                  </span>
+                )}
               </div>
+              {kipStatus === "kipk" ? (
+                <p className="text-xs text-on-surface-variant flex items-center gap-1.5 ml-1">
+                  <span className="material-symbols-outlined text-[15px] text-primary">verified</span>
+                  Pendaftaran akun Mahasiswa KIP hanya berlaku bagi mahasiswa <strong className="text-primary font-semibold">Universitas Nahdlatul Ulama Surabaya</strong>.
+                </p>
+              ) : (
+                <p className="text-xs text-on-surface-variant ml-1">
+                  Ketik nama lengkap perguruan tinggi / universitas Anda.
+                </p>
+              )}
             </div>
 
             {/* NIM & Tahun Masuk Grid */}
@@ -251,9 +342,8 @@ export default function Daftar() {
                 </label>
                 <div className="relative">
                   <span
-                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                      nimFocus ? "text-primary" : "text-outline"
-                    }`}
+                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${nimFocus ? "text-primary" : "text-outline"
+                      }`}
                   >
                     badge
                   </span>
@@ -281,9 +371,8 @@ export default function Daftar() {
                 </label>
                 <div className="relative">
                   <span
-                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                      yearOfEntryFocus ? "text-primary" : "text-outline"
-                    }`}
+                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${yearOfEntryFocus ? "text-primary" : "text-outline"
+                      }`}
                   >
                     calendar_today
                   </span>
@@ -350,9 +439,8 @@ export default function Daftar() {
                 </label>
                 <div className="relative">
                   <span
-                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                      passwordFocus ? "text-primary" : "text-outline"
-                    }`}
+                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${passwordFocus ? "text-primary" : "text-outline"
+                      }`}
                   >
                     lock
                   </span>
@@ -378,9 +466,8 @@ export default function Daftar() {
                 </label>
                 <div className="relative">
                   <span
-                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-                      confirmPasswordFocus ? "text-primary" : "text-outline"
-                    }`}
+                    className={`material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200 ${confirmPasswordFocus ? "text-primary" : "text-outline"
+                      }`}
                   >
                     lock_reset
                   </span>
@@ -402,11 +489,23 @@ export default function Daftar() {
             {/* CTA Button */}
             <div className="pt-base">
               <button
-                className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20 cursor-pointer"
+                className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 type="submit"
+                disabled={isSubmitting}
               >
-                <span>Daftar Sekarang</span>
-                <span className="material-symbols-outlined">arrow_forward</span>
+                {isSubmitting ? (
+                  <>
+                    <span className="animate-spin material-symbols-outlined text-[18px]">
+                      progress_activity
+                    </span>
+                    <span>Mendaftarkan Akun ke Database...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Daftar Sekarang</span>
+                    <span className="material-symbols-outlined">arrow_forward</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

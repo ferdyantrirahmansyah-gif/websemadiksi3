@@ -509,21 +509,30 @@ export default function AdminDashboard() {
       initDefaultActivities();
     }
 
-    // Load users list (initial mock)
-    const storedUsers = localStorage.getItem("semadiksi_users");
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    } else {
-      const defaultUsers: User[] = [
-        { id: "usr-1", name: "Ahmad Fauzan", email: "ahmad.fauzan@gmail.com", university: "Universitas Diponegoro", kipStatus: "KIP UNUSA", verificationStatus: "Verified" },
-        { id: "usr-2", name: "Budi Santoso", email: "budi.santoso@gmail.com", university: "Universitas Negeri Semarang", kipStatus: "KIP UNUSA", verificationStatus: "Pending" },
-        { id: "usr-3", name: "Clara Citra", email: "clara.citra@gmail.com", university: "Universitas Diponegoro", kipStatus: "Umum", verificationStatus: "Verified" },
-        { id: "usr-4", name: "Dedi Kurnia", email: "dedi.kurnia@gmail.com", university: "UIN Walisongo", kipStatus: "KIP UNUSA", verificationStatus: "Pending" },
-        { id: "usr-5", name: "Evi Latifah", email: "evi.latifah@gmail.com", university: "Universitas PGRI Semarang", kipStatus: "KIP UNUSA", verificationStatus: "Rejected" },
-      ];
-      setUsers(defaultUsers);
-      localStorage.setItem("semadiksi_users", JSON.stringify(defaultUsers));
-    }
+    // Load users list from centralized backend SQLite API
+    fetch("/api/users")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.users) && data.users.length > 0) {
+          setUsers(data.users);
+          localStorage.setItem("semadiksi_users", JSON.stringify(data.users));
+        } else {
+          const storedUsers = localStorage.getItem("semadiksi_users");
+          if (storedUsers) {
+            try {
+              setUsers(JSON.parse(storedUsers));
+            } catch (e) {}
+          }
+        }
+      })
+      .catch(() => {
+        const storedUsers = localStorage.getItem("semadiksi_users");
+        if (storedUsers) {
+          try {
+            setUsers(JSON.parse(storedUsers));
+          } catch (e) {}
+        }
+      });
 
     // Load KIP-K Documents list
     const storedKipkDocs = localStorage.getItem("semadiksi_kipk_documents");

@@ -9,12 +9,15 @@ export default function Masuk() {
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
   const [kipStatus, setKipStatus] = useState("KIP UNUSA");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const [identityFocus, setIdentityFocus] = useState(false);
   const [passwordFocus, setPasswordFocus] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
     
     const emailClean = identity.trim().toLowerCase();
     
@@ -24,44 +27,50 @@ export default function Masuk() {
       router.push("/admin/masuk");
       return;
     }
-    
-    // Check blocklist
-    const blocklist = JSON.parse(localStorage.getItem("semadiksi_blocked_emails") || "[]");
-    if (blocklist.some((email: string) => email.toLowerCase() === emailClean)) {
-      alert("Akun Anda telah dinonaktifkan oleh administrator!");
-      return;
-    }
 
-    // Load or create user
-    const storedUsers = localStorage.getItem("semadiksi_users");
-    let usersList = storedUsers ? JSON.parse(storedUsers) : [];
-    let existingUser = usersList.find((u: any) => u.email.toLowerCase() === emailClean);
+    setIsLoading(true);
 
-    if (existingUser) {
-      // Validate password if it exists on the record
-      if (existingUser.password && existingUser.password !== password) {
-        alert("Password salah!");
+    try {
+      // Call centralized backend authentication API
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identity, password, kipStatus })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.message || "Gagal masuk. Periksa kembali akun dan password Anda.");
+        setIsLoading(false);
         return;
       }
-    } else {
-      existingUser = {
-        id: `usr-${Date.now()}`,
-        name: identity.split("@")[0], // Fallback name from email
-        email: emailClean,
-        university: "Universitas Diponegoro",
-        kipStatus: kipStatus === "KIP UNUSA" ? "KIP UNUSA" : "Umum",
-        verificationStatus: kipStatus === "KIP UNUSA" ? "Pending" : "Verified",
-        password: password
-      };
-      usersList.push(existingUser);
-      localStorage.setItem("semadiksi_users", JSON.stringify(usersList));
+
+      // If login successful, synchronize user session to localStorage
+      if (data.user) {
+        localStorage.setItem("semadiksi_current_user", JSON.stringify(data.user));
+
+        try {
+          const storedUsers = localStorage.getItem("semadiksi_users");
+          const usersList = storedUsers ? JSON.parse(storedUsers) : [];
+          const idx = usersList.findIndex((u: any) => u.id === data.user.id || u.email.toLowerCase() === data.user.email.toLowerCase());
+          if (idx >= 0) {
+            usersList[idx] = { ...usersList[idx], ...data.user };
+          } else {
+            usersList.push(data.user);
+          }
+          localStorage.setItem("semadiksi_users", JSON.stringify(usersList));
+        } catch (e) {}
+      }
+
+      // Redirect to student dashboard
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("Login request error:", err);
+      setErrorMessage("Tidak dapat terhubung ke server. Pastikan koneksi Anda aktif.");
+    } finally {
+      setIsLoading(false);
     }
-
-    // Set active student session
-    localStorage.setItem("semadiksi_current_user", JSON.stringify(existingUser));
-
-    // Redirect to dashboard on submit
-    router.push("/dashboard");
   };
 
   return (
@@ -109,6 +118,18 @@ export default function Masuk() {
                 Silakan lengkapi data untuk masuk ke portal.
               </p>
             </header>
+
+            {errorMessage && (
+              <div className="mb-6 p-4 bg-error-container/20 border border-error/30 rounded-2xl text-error text-sm font-medium flex items-start gap-3 animate-shake">
+                <span className="material-symbols-outlined text-[20px] text-error shrink-0 mt-0.5">
+                  error
+                </span>
+                <div className="flex-1">
+                  <p className="font-semibold text-error">Gagal Masuk</p>
+                  <p className="text-on-surface-variant text-xs mt-0.5">{errorMessage}</p>
+                </div>
+              </div>
+            )}
 
             <form className="space-y-base" onSubmit={handleSubmit}>
               {/* Identity Input */}
@@ -245,13 +266,25 @@ export default function Masuk() {
               <div className="pt-sm space-y-sm">
                 {/* CTA Primary */}
                 <button
-                  className="w-full bg-primary text-on-primary py-4 rounded-full font-bold text-label-md shadow-md hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-base cursor-pointer"
+                  className="w-full bg-primary text-on-primary py-4 rounded-full font-bold text-label-md shadow-md hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-base cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   type="submit"
+                  disabled={isLoading}
                 >
-                  Masuk
-                  <span className="material-symbols-outlined">
-                    arrow_forward
-                  </span>
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin material-symbols-outlined text-[18px]">
+                        progress_activity
+                      </span>
+                      <span>Memverifikasi Akun...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Masuk</span>
+                      <span className="material-symbols-outlined">
+                        arrow_forward
+                      </span>
+                    </>
+                  )}
                 </button>
                 {/* CTA Secondary */}
                 <Link

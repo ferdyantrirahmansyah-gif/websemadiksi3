@@ -13,9 +13,10 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState({
     name: "Ahmad Fauzan",
-    university: "Universitas Diponegoro",
+    university: "Universitas Nahdlatul Ulama Surabaya",
     kipStatus: "KIP UNUSA",
-    verificationStatus: "Verified"
+    verificationStatus: "Verified",
+    avatarUrl: ""
   });
 
   useEffect(() => {
@@ -24,33 +25,26 @@ export default function DashboardLayout({
       if (userStr) {
         try {
           const u = JSON.parse(userStr);
-          const storedUsers = localStorage.getItem("semadiksi_users");
-          const usersList = storedUsers ? JSON.parse(storedUsers) : [];
-          const updatedUser = usersList.find((usr: any) => usr.email.toLowerCase() === u.email.toLowerCase());
-          
-          if (updatedUser) {
-            setCurrentUser({
-              name: updatedUser.name,
-              university: updatedUser.university,
-              kipStatus: updatedUser.kipStatus,
-              verificationStatus: updatedUser.verificationStatus
-            });
-            localStorage.setItem("semadiksi_current_user", JSON.stringify(updatedUser));
-          } else {
-            setCurrentUser({
-              name: u.name,
-              university: u.university,
-              kipStatus: u.kipStatus,
-              verificationStatus: u.verificationStatus
-            });
-          }
+          setCurrentUser({
+            name: u.name || "Pengguna",
+            university: u.university || "Universitas Nahdlatul Ulama Surabaya",
+            kipStatus: u.kipStatus || "KIP UNUSA",
+            verificationStatus: u.verificationStatus || "Verified",
+            avatarUrl: u.avatarUrl || ""
+          });
         } catch (e) {}
       }
     };
 
     updateSession();
     window.addEventListener("focus", updateSession);
-    return () => window.removeEventListener("focus", updateSession);
+    window.addEventListener("userProfileUpdated", updateSession);
+    window.addEventListener("storage", updateSession);
+    return () => {
+      window.removeEventListener("focus", updateSession);
+      window.removeEventListener("userProfileUpdated", updateSession);
+      window.removeEventListener("storage", updateSession);
+    };
   }, []);
 
   const navLinks = [
@@ -121,13 +115,18 @@ export default function DashboardLayout({
           </div>
           <Link
             href="/dashboard/profil"
-            className="w-10 h-10 rounded-full border-2 border-primary-fixed overflow-hidden cursor-pointer hover:border-primary transition-all duration-200"
+            className="w-10 h-10 rounded-full border-2 border-primary-fixed overflow-hidden cursor-pointer hover:border-primary transition-all duration-200 flex items-center justify-center bg-primary/10 shadow-sm"
+            title="Profil Saya"
           >
-            <img
-              className="w-full h-full object-cover"
-              alt="User profile avatar"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuByC13lRV-RXOv0wxz5CEddVyXFPn7mB78UwyO78hHTtw4oLda25cFIDyqFxXT2Ws2_cX6amMuQrpkkGD6wl5NvmOJsYF0GOSFS2fTiCDEo5Y5DUay0oKKExRn2MZzQfii3KkLuzsbFdtVFizHLSVi6mPtbSzi02TB9n3sh2r66X7yxUb4uochJZwj-CZNAe4RRqFxSFFNv7Vgrrobo0XFEQpFj2PKdh3MZs4QqcA6dfslUx7ijmZxWdQ"
-            />
+            {currentUser.avatarUrl ? (
+              <img
+                className="w-full h-full object-cover"
+                alt={currentUser.name}
+                src={currentUser.avatarUrl}
+              />
+            ) : (
+              <span className="material-symbols-outlined text-primary text-2xl">person</span>
+            )}
           </Link>
         </div>
       </header>
