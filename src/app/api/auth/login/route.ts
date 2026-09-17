@@ -70,7 +70,8 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: user.role || "student",
+      kipStatus: user.kipStatus || "Umum"
     });
 
     const { password: _, ...safeUser } = user;

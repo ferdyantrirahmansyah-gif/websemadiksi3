@@ -264,6 +264,26 @@ export default function BerkasKipkPage() {
     }
   ];
 
+  if (currentUser && currentUser.kipStatus !== "KIP UNUSA") {
+    return (
+      <div className="max-w-md mx-auto px-margin-mobile md:px-margin-desktop py-16 text-center space-y-md flex flex-col items-center justify-center min-h-[50vh]">
+        <span className="material-symbols-outlined text-amber-600 text-6xl">school</span>
+        <h2 className="text-2xl font-bold text-on-surface">Khusus Mahasiswa KIP UNUSA</h2>
+        <p className="text-on-surface-variant text-sm leading-relaxed max-w-sm">
+          Halaman Berkas KIP-K dan Portofolio Keaktifan ini khusus diperuntukkan bagi mahasiswa penerima beasiswa KIP UNUSA.
+        </p>
+        <div className="pt-2 flex items-center justify-center gap-3">
+          <Link href="/dashboard" className="inline-block px-6 py-3 bg-primary text-white font-bold rounded-full text-xs shadow-md active:scale-95 transition-all">
+            Kembali ke Beranda
+          </Link>
+          <Link href="/dashboard/info-beasiswa" className="inline-block px-6 py-3 border border-primary text-primary font-bold rounded-full text-xs hover:bg-primary/5 active:scale-95 transition-all">
+            Lihat Info Beasiswa
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-margin-mobile md:p-margin-desktop space-y-6 max-w-7xl mx-auto py-6">
       {/* Header Banner */}

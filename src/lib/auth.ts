@@ -21,6 +21,7 @@ export function signJwt(payload: {
   email: string;
   name: string;
   role?: string;
+  kipStatus?: string;
 }): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 }

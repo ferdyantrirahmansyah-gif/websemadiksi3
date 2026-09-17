@@ -8,7 +8,6 @@ export default function Masuk() {
   const router = useRouter();
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
-  const [kipStatus, setKipStatus] = useState("KIP UNUSA");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,7 +34,7 @@ export default function Masuk() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identity, password, kipStatus })
+        body: JSON.stringify({ identity, password })
       });
 
       const data = await res.json();
@@ -61,10 +60,17 @@ export default function Masuk() {
           }
           localStorage.setItem("semadiksi_users", JSON.stringify(usersList));
         } catch (e) {}
+
+        // Trigger session update event
+        window.dispatchEvent(new Event("userProfileUpdated"));
       }
 
-      // Redirect to student dashboard
-      router.push("/dashboard");
+      // Redirect based on user role
+      if (data.user?.role === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       console.error("Login request error:", err);
       setErrorMessage("Tidak dapat terhubung ke server. Pastikan koneksi Anda aktif.");
@@ -191,75 +197,6 @@ export default function Masuk() {
                     onBlur={() => setPasswordFocus(false)}
                     required
                   />
-                </div>
-              </div>
-
-              {/* KIP Toggle / Radio Pattern */}
-              <div className="py-sm">
-                <p className="font-label-md text-label-md text-on-surface-variant mb-base ml-1">
-                  Status Mahasiswa
-                </p>
-                <div className="grid grid-cols-2 gap-sm">
-                  <label className="cursor-pointer group">
-                    <input
-                      checked={kipStatus === "KIP UNUSA"}
-                      onChange={() => setKipStatus("KIP UNUSA")}
-                      className="hidden peer"
-                      name="kip_status"
-                      type="radio"
-                      value="KIP UNUSA"
-                    />
-                    <div className="flex items-center justify-center gap-base py-3 px-4 rounded-xl border-2 border-transparent bg-surface-container peer-checked:bg-primary-container/10 peer-checked:border-primary transition-all duration-300">
-                      <span
-                        className={`material-symbols-outlined ${
-                          kipStatus === "KIP UNUSA"
-                            ? "text-primary fill-1"
-                            : "text-outline-variant"
-                        }`}
-                      >
-                        stars
-                      </span>
-                      <span
-                        className={`font-label-md text-label-md ${
-                          kipStatus === "KIP UNUSA"
-                            ? "text-primary font-bold"
-                            : "text-on-surface-variant"
-                        }`}
-                      >
-                        Mahasiswa KIP UNUSA
-                      </span>
-                    </div>
-                  </label>
-                  <label className="cursor-pointer group">
-                    <input
-                      checked={kipStatus === "Umum"}
-                      onChange={() => setKipStatus("Umum")}
-                      className="hidden peer"
-                      name="kip_status"
-                      type="radio"
-                      value="Umum"
-                    />
-                    <div className="flex items-center justify-center gap-base py-3 px-4 rounded-xl border-2 border-transparent bg-surface-container peer-checked:bg-primary-container/10 peer-checked:border-primary transition-all duration-300">
-                      <span
-                        className={`material-symbols-outlined ${
-                          kipStatus === "Umum"
-                            ? "text-primary"
-                            : "text-outline-variant"
-                        }`}
-                      >
-                        verified_user
-                      </span>
-                      <span
-                        className={`font-label-md text-label-md ${
-                          kipStatus === "Umum"
-                            ? "text-primary font-bold"
-                            : "text-on-surface-variant"
-                        }`}
-                      >
-                        Umum
-                      </span>
-                    </div>
-                  </label>
                 </div>
               </div>
 

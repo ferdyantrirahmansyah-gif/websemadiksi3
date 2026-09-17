@@ -12,10 +12,10 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState({
-    name: "Ahmad Fauzan",
-    university: "Universitas Nahdlatul Ulama Surabaya",
-    kipStatus: "KIP UNUSA",
-    verificationStatus: "Verified",
+    name: "",
+    university: "",
+    kipStatus: "",
+    verificationStatus: "",
     avatarUrl: ""
   });
 
@@ -28,7 +28,7 @@ export default function DashboardLayout({
           setCurrentUser({
             name: u.name || "Pengguna",
             university: u.university || "Universitas Nahdlatul Ulama Surabaya",
-            kipStatus: u.kipStatus || "KIP UNUSA",
+            kipStatus: u.kipStatus || (u.university?.toLowerCase().includes("unusa") ? "KIP UNUSA" : "Umum"),
             verificationStatus: u.verificationStatus || "Verified",
             avatarUrl: u.avatarUrl || ""
           });
@@ -107,10 +107,10 @@ export default function DashboardLayout({
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
             <p className="font-label-md text-label-md text-on-surface font-semibold">
-              Halo, {currentUser.name}
+              Halo, {currentUser.name || "Sobat Dikti"}
             </p>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">
-              {currentUser.kipStatus === "KIP UNUSA" ? "Mahasiswa KIP UNUSA" : "Umum"}
+            <p className="font-label-sm text-label-sm font-semibold text-primary">
+              {currentUser.kipStatus === "KIP UNUSA" ? "Mahasiswa KIP UNUSA" : "Mahasiswa Umum"}
             </p>
           </div>
           <Link
@@ -155,14 +155,21 @@ export default function DashboardLayout({
               <p className="font-label-sm text-label-sm text-primary mb-1">
                 Selamat Datang,
               </p>
-              <p className="font-bold text-on-surface">{currentUser.name}</p>
+              <p className="font-bold text-on-surface">{currentUser.name || "Mahasiswa"}</p>
               <div className="mt-2 flex items-center gap-2">
-                <span className="w-2 h-2 bg-secondary-container rounded-full animate-pulse"></span>
-                <span className="font-label-sm text-label-sm text-on-surface-variant">
-                  Status: {currentUser.verificationStatus === "Verified" ? "Terverifikasi" : 
-                           currentUser.verificationStatus === "Pending" ? "Menunggu Verifikasi" : "Ditolak / Non-KIP"}
+                <span className={`w-2 h-2 rounded-full ${currentUser.kipStatus === "KIP UNUSA" ? "bg-primary animate-pulse" : "bg-emerald-600"}`}></span>
+                <span className="font-label-sm text-label-sm font-semibold text-on-surface-variant">
+                  {currentUser.kipStatus === "KIP UNUSA" ? "Mahasiswa KIP UNUSA" : "Mahasiswa Umum"}
                 </span>
               </div>
+              {currentUser.kipStatus === "KIP UNUSA" && (
+                <div className="mt-1">
+                  <span className="text-[11px] text-on-surface-variant">
+                    Status: {currentUser.verificationStatus === "Verified" ? "Terverifikasi" : 
+                             currentUser.verificationStatus === "Pending" ? "Menunggu Verifikasi" : "Belum Terverifikasi"}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -207,7 +214,7 @@ export default function DashboardLayout({
             })}
 
             {/* Special Section for KIP - Only for KIP UNUSA students */}
-            {currentUser.kipStatus === "KIP UNUSA" && (
+            {currentUser.kipStatus === "KIP UNUSA" ? (
               <>
                 <div className="mt-6 mb-2 px-6">
                   <p className="font-label-sm text-label-sm text-outline-variant uppercase tracking-wider font-bold">
@@ -292,6 +299,62 @@ export default function DashboardLayout({
                   </span>
                   <span className="font-label-md text-label-md font-bold">
                     Presensi Kegiatan
+                  </span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="mt-6 mb-2 px-6">
+                  <p className="font-label-sm text-label-sm text-outline-variant uppercase tracking-wider font-bold">
+                    Layanan Mahasiswa Umum
+                  </p>
+                </div>
+                <Link
+                  href="/dashboard/info-beasiswa"
+                  onClick={handleLinkClick}
+                  className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                    pathname === "/dashboard/info-beasiswa"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/info-beasiswa" ? "text-white" : "text-emerald-600"}`}>
+                    school
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Info Beasiswa Terbuka
+                  </span>
+                </Link>
+                <Link
+                  href="/dashboard/kegiatan"
+                  onClick={handleLinkClick}
+                  className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                    pathname === "/dashboard/kegiatan"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/kegiatan" ? "text-white" : "text-secondary"}`}>
+                    event_upcoming
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Seminar & Pelatihan
+                  </span>
+                </Link>
+                <Link
+                  href="/dashboard/sertifikat"
+                  onClick={handleLinkClick}
+                  className={`px-4 py-3 flex items-center gap-4 rounded-full transition-all active:scale-98 duration-150 mx-2 ${
+                    pathname === "/dashboard/sertifikat"
+                      ? "bg-primary text-white font-bold shadow-sm"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className={`material-symbols-outlined ${pathname === "/dashboard/sertifikat" ? "text-white" : "text-amber-600"}`}>
+                    workspace_premium
+                  </span>
+                  <span className="font-label-md text-label-md font-bold">
+                    Sertifikat Saya
                   </span>
                 </Link>
               </>

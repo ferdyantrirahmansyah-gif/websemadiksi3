@@ -100,17 +100,137 @@ export default function DashboardHome() {
     },
   ];
 
+  const isKip = currentUser?.kipStatus === "KIP UNUSA";
+
   return (
     <div className="max-w-6xl mx-auto px-6 md:px-12 py-10 relative z-10">
       {/* Welcome Section */}
-      <section className="mb-12">
+      <section className="mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+          {isKip ? (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary font-bold text-xs shadow-xs">
+              <span className="material-symbols-outlined text-[16px]">verified</span>
+              <span>Dashboard Mahasiswa KIP-K UNUSA</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-600/10 border border-emerald-600/25 text-emerald-700 font-bold text-xs shadow-xs">
+              <span className="material-symbols-outlined text-[16px]">school</span>
+              <span>Dashboard Mahasiswa Umum</span>
+            </div>
+          )}
+
+          {isKip && (
+            <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${
+              currentUser?.verificationStatus === "Verified"
+                ? "bg-green-50 text-green-700 border-green-200"
+                : "bg-amber-50 text-amber-700 border-amber-200"
+            }`}>
+              {currentUser?.verificationStatus === "Verified" ? "✓ Status: Terverifikasi" : "⏳ Status: Menunggu Verifikasi"}
+            </span>
+          )}
+        </div>
+
         <h2 className="font-display text-3xl md:text-4xl font-extrabold text-on-surface mb-2">
-          Selamat Pagi, Sobat Dikti!
+          Selamat Datang, {currentUser?.name || "Sobat Dikti"}!
         </h2>
-        <p className="font-body-lg text-on-surface-variant max-w-2xl text-lg">
-          Mari berkontribusi dan berkembang bersama komunitas penerima beasiswa
-          pendidikan terbesar di kampus.
+        <p className="font-body-lg text-on-surface-variant max-w-3xl text-lg">
+          {isKip
+            ? "Portal resmi penerima Beasiswa KIP Kuliah Universitas Nahdlatul Ulama Surabaya. Kelola pelaporan semester, presensi kegiatan, dan berkas evaluasi Anda."
+            : "Wadah kolaborasi dan pengembangan potensi mahasiswa. Akses informasi beasiswa terbuka, webinar inspiratif, pelatihan keahlian, dan sertifikat kegiatan."}
         </p>
+      </section>
+
+      {/* Category Quick Navigation Cards */}
+      <section className="mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {isKip ? (
+            <>
+              <Link
+                href="/dashboard/pengajuan-pencairan"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">assignment_turned_in</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Pelaporan Beasiswa</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Formulir monev semester</p>
+              </Link>
+              <Link
+                href="/dashboard/berkas-kipk"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">folder_shared</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Berkas KIP-K</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Unggah & validasi dokumen</p>
+              </Link>
+              <Link
+                href="/dashboard/absensi"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">how_to_reg</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Presensi Kegiatan</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Absensi agenda wajib</p>
+              </Link>
+              <Link
+                href="/dashboard/info-kip"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">verified_user</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Info KIP UNUSA</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Panduan & pencairan</p>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/dashboard/info-beasiswa"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">school</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Info Beasiswa</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Peluang beasiswa umum</p>
+              </Link>
+              <Link
+                href="/dashboard/kegiatan"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">event_upcoming</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Seminar & Pelatihan</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Ikuti workshop terbuka</p>
+              </Link>
+              <Link
+                href="/dashboard/sertifikat"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">workspace_premium</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Sertifikat Saya</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Unduh sertifikat kegiatan</p>
+              </Link>
+              <Link
+                href="/dashboard/berita-acara"
+                className="bg-surface-container-lowest border border-surface-container-high hover:border-primary p-4 rounded-2xl shadow-xs hover:shadow-md transition-all group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-700 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                  <span className="material-symbols-outlined">newspaper</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors">Berita Acara</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Dokumentasi & publikasi</p>
+              </Link>
+            </>
+          )}
+        </div>
       </section>
 
       {/* Bento Grid Content */}
