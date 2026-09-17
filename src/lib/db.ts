@@ -45,7 +45,8 @@ export const userDb = {
       .eq("id", id)
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) console.error("userDb.findById error:", error);
+    if (!data) return null;
     return data as UserRecord;
   },
 
@@ -56,7 +57,8 @@ export const userDb = {
       .ilike("email", email.trim())
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) console.error("userDb.findByEmail error:", error);
+    if (!data) return null;
     return data as UserRecord;
   },
 
@@ -68,7 +70,8 @@ export const userDb = {
       .ilike("nim", nim.trim())
       .maybeSingle();
 
-    if (error || !data) return null;
+    if (error) console.error("userDb.findByNim error:", error);
+    if (!data) return null;
     return data as UserRecord;
   },
 
@@ -163,7 +166,16 @@ export const userDb = {
       .select()
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      console.error("userDb.create Supabase error:", error);
+      throw new Error(error.message || "Gagal membuat pengguna baru di database");
+    }
+
+    if (!data) {
+      console.error("userDb.create: no data returned from Supabase insert");
+      return null;
+    }
+
     return data as UserRecord;
   },
 
@@ -190,12 +202,20 @@ export const userDb = {
       .select()
       .single();
 
-    if (error || !data) return null;
+    if (error) {
+      console.error("userDb.update Supabase error:", error);
+      return null;
+    }
+    if (!data) return null;
     return data as UserRecord;
   },
 
   async delete(id: string): Promise<boolean> {
     const { error } = await supabase.from("users").delete().eq("id", id);
-    return !error;
+    if (error) {
+      console.error("userDb.delete Supabase error:", error);
+      return false;
+    }
+    return true;
   },
 };

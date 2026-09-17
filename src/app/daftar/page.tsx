@@ -98,7 +98,7 @@ export default function Daftar() {
           });
           localStorage.setItem("semadiksi_users", JSON.stringify(usersList));
         }
-      } catch (err) {}
+      } catch (err) { }
 
       alert("Pendaftaran akun berhasil! Akun Anda telah tersimpan di database. Silakan masuk.");
       router.push("/masuk");
@@ -153,8 +153,8 @@ export default function Daftar() {
               <div className="grid grid-cols-2 gap-sm">
                 <button
                   className={`flex items-center justify-center gap-2 p-md rounded-xl border-2 transition-all duration-200 cursor-pointer ${kipStatus === "kipk"
-                      ? "border-primary bg-primary-container/5 text-primary font-bold"
-                      : "border-surface-variant bg-surface text-on-surface-variant font-medium"
+                    ? "border-primary bg-primary-container/5 text-primary font-bold"
+                    : "border-surface-variant bg-surface text-on-surface-variant font-medium"
                     }`}
                   onClick={() => {
                     setKipStatus("kipk");
@@ -175,8 +175,8 @@ export default function Daftar() {
                 </button>
                 <button
                   className={`flex items-center justify-center gap-2 p-md rounded-xl border-2 transition-all duration-200 cursor-pointer ${kipStatus === "nonkip"
-                      ? "border-primary bg-primary-container/5 text-primary font-bold"
-                      : "border-surface-variant bg-surface text-on-surface-variant font-medium"
+                    ? "border-primary bg-primary-container/5 text-primary font-bold"
+                    : "border-surface-variant bg-surface text-on-surface-variant font-medium"
                     }`}
                   onClick={() => {
                     setKipStatus("nonkip");
@@ -280,8 +280,8 @@ export default function Daftar() {
                 </span>
                 <input
                   className={`w-full pl-12 pr-11 py-4 rounded-xl transition-all outline-none font-body-md ${kipStatus === "kipk"
-                      ? "bg-surface-container/70 border border-primary/20 text-on-surface font-semibold cursor-not-allowed select-none"
-                      : "bg-surface-container-low border-none focus:ring-2 focus:ring-primary focus:bg-white text-on-surface"
+                    ? "bg-surface-container/70 border border-primary/20 text-on-surface font-semibold cursor-not-allowed select-none"
+                    : "bg-surface-container-low border-none focus:ring-2 focus:ring-primary focus:bg-white text-on-surface"
                     }`}
                   id="university"
                   placeholder={
