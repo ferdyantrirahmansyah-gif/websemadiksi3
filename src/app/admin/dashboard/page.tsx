@@ -17,6 +17,9 @@ import {
   INITIAL_MONEV_AKADEMIK_SUBMISSIONS,
   INITIAL_PENCAIRAN_KIPK,
   INITIAL_KIPK_DOCUMENTS,
+  KIPK_TAHAP_CATEGORIES,
+  KIPK_TAHAP_LABELS,
+  getTahapForCategory,
 } from "@/data/portalData";
 
 const formatToIndonesianDate = (dateStr: string) => {
@@ -74,6 +77,13 @@ export interface SeatLayoutConfig {
   layoutPreset?: "auditorium_unusa" | "hall_3blocks" | "theater_wide" | "classroom" | "custom";
 }
 
+export interface FormSection {
+  id: string;
+  title: string;
+  description?: string;
+  afterSectionAction?: "next" | "submit" | string;
+}
+
 export interface FormQuestionItem {
   id: string;
   title: string;
@@ -81,53 +91,103 @@ export interface FormQuestionItem {
   options?: string[];
   required: boolean;
   placeholder?: string;
+  sectionId?: string;
+  goToSectionBasedOnAnswer?: boolean;
+  optionBranches?: { [optionIndex: number]: string };
+  imageUrl?: string;
+  helpText?: string;
 }
 
+export const INITIAL_PENCAIRAN_SECTIONS: FormSection[] = [
+  {
+    id: "sec-p1",
+    title: "Data Identitas & Akademik Mahasiswa",
+    description: "Pastikan data diri dan informasi program studi sesuai dengan kartu tanda mahasiswa aktif UNUSA.",
+    afterSectionAction: "next"
+  },
+  {
+    id: "sec-p2",
+    title: "Unggah Berkas Persyaratan Pencairan KIP-K",
+    description: "Unggah dokumen resmi rekomendasi prodi, surat pernyataan, dan berkas pengusul dalam format PDF atau Tautan Google Drive.",
+    afterSectionAction: "submit"
+  }
+];
+
+export const INITIAL_PELAPORAN_SECTIONS: FormSection[] = [
+  {
+    id: "sec-l1",
+    title: "Keaktifan Organisasi Kemahasiswaan & Komunitas",
+    description: "Laporan keterlibatan aktif dalam kepengurusan Ormawa, kepanitiaan, atau komunitas KIP Kuliah UNUSA.",
+    afterSectionAction: "next"
+  },
+  {
+    id: "sec-l2",
+    title: "Pelaporan Capaian Prestasi & Perlombaan",
+    description: "Isikan rincian kompetisi akademik/non-akademik yang Anda ikuti beserta bukti sertifikat dan dokumentasi pendukung.",
+    afterSectionAction: "submit"
+  }
+];
+
+export const INITIAL_MONEV_SECTIONS: FormSection[] = [
+  {
+    id: "sec-m1",
+    title: "Evaluasi Capaian Indeks Prestasi (Monev Akademik)",
+    description: "Isikan data capaian IPS semester berjalan, IPK kumulatif, serta unggah Kartu Hasil Studi (KHS) resmi.",
+    afterSectionAction: "next"
+  },
+  {
+    id: "sec-m2",
+    title: "Pemutakhiran Kondisi Sosial Ekonomi & Tanggungan",
+    description: "Laporan data penghasilan orang tua/wali terkini serta bukti pendukung kondisi ekonomi keluarga.",
+    afterSectionAction: "submit"
+  }
+];
+
 export const INITIAL_PENCAIRAN_QUESTIONS: FormQuestionItem[] = [
-  { id: "q-p1", title: "Email Akademik / Student Email", type: "Jawaban singkat", required: true, placeholder: "3230023034@student.unusa.ac.id" },
-  { id: "q-p2", title: "Nama Lengkap Mahasiswa", type: "Jawaban singkat", required: true, placeholder: "Nama sesuai SIAKAD" },
-  { id: "q-p3", title: "NIM (Nomor Induk Mahasiswa)", type: "Jawaban singkat", required: true, placeholder: "3230023034" },
-  { id: "q-p4", title: "Program Studi", type: "Drop-down", options: ["S1 Keperawatan", "S1 Manajemen", "S1 Sistem Informasi", "S1 Pendidikan Dokter", "D3 Kebidanan"], required: true },
-  { id: "q-p5", title: "Tahun Angkatan", type: "Drop-down", options: ["2021", "2022", "2023", "2024", "2025"], required: true },
-  { id: "q-p6", title: "Unggah Surat Rekomendasi Prodi", type: "Upload file", required: true, placeholder: "Tautan Google Drive / PDF" },
-  { id: "q-p7", title: "Unggah Surat Pernyataan Mahasiswa Penerima KIP-K", type: "Upload file", required: true, placeholder: "Tautan Google Drive / PDF" },
-  { id: "q-p8", title: "Unggah Berkas Pengusul (KIP / KKS / DTKS / SKTM)", type: "Upload file", required: true, placeholder: "Tautan Google Drive / PDF" }
+  { id: "q-p1", sectionId: "sec-p1", title: "Email Akademik / Student Email", type: "Jawaban singkat", required: true, placeholder: "3230023034@student.unusa.ac.id" },
+  { id: "q-p2", sectionId: "sec-p1", title: "Nama Lengkap Mahasiswa", type: "Jawaban singkat", required: true, placeholder: "Nama sesuai SIAKAD" },
+  { id: "q-p3", sectionId: "sec-p1", title: "NIM (Nomor Induk Mahasiswa)", type: "Jawaban singkat", required: true, placeholder: "3230023034" },
+  { id: "q-p4", sectionId: "sec-p1", title: "Program Studi", type: "Drop-down", options: ["S1 Keperawatan", "S1 Manajemen", "S1 Sistem Informasi", "S1 Pendidikan Dokter", "D3 Kebidanan"], required: true },
+  { id: "q-p5", sectionId: "sec-p1", title: "Tahun Angkatan", type: "Drop-down", options: ["2021", "2022", "2023", "2024", "2025"], required: true },
+  { id: "q-p6", sectionId: "sec-p2", title: "Unggah Surat Rekomendasi Prodi", type: "Upload file", required: true, placeholder: "Tautan Google Drive / PDF" },
+  { id: "q-p7", sectionId: "sec-p2", title: "Unggah Surat Pernyataan Mahasiswa Penerima KIP-K", type: "Upload file", required: true, placeholder: "Tautan Google Drive / PDF" },
+  { id: "q-p8", sectionId: "sec-p2", title: "Unggah Berkas Pengusul (KIP / KKS / DTKS / SKTM)", type: "Upload file", required: true, placeholder: "Tautan Google Drive / PDF" }
 ];
 
 export const INITIAL_PELAPORAN_QUESTIONS: FormQuestionItem[] = [
-  { id: "q-l1", title: "Apakah Saudara aktif dalam kegiatan Ormawa/UKM semester ini?", type: "Pilihan ganda", options: ["Ya, Aktif dalam Ormawa / UKM", "Tidak Aktif / Belum Mengikuti"], required: true },
-  { id: "q-l2", title: "Sebutkan Kegiatan Ormawa yang Diikuti", type: "Jawaban singkat", required: true, placeholder: "Ketua BEM UNUSA, Panitia Bakti Sosial KIP-K" },
-  { id: "q-l3", title: "Bukti Keaktifan (SK Pengurus / Surat Tanda Aktif)", type: "Upload file", required: true },
-  { id: "q-l4", title: "Screenshot Bukti Anda Masih Bergabung di Grup WA Beasiswa KIPK", type: "Upload file", required: true },
-  { id: "q-l5", title: "Upload File Laporan Beasiswa KIP-K", type: "Upload file", required: true },
-  { id: "q-l6", title: "Jumlah Kompetisi yang Diikuti Semester Ini", type: "Drop-down", options: ["0 (Tidak Mengikuti)", "1 Kompetisi / Lomba", "2 Kompetisi / Lomba", "3+ Kompetisi / Lomba"], required: true },
-  { id: "q-l7", title: "1. Peringkat / Capaian Lomba", type: "Drop-down", options: ["Peserta", "Juara 1", "Juara 2", "Juara 3", "Juara Harapan", "Top 10 / Finalis", "Apresiasi Kejuaraan"], required: true },
-  { id: "q-l8", title: "2. Tingkat Kompetisi", type: "Drop-down", options: ["Nasional", "Internasional", "Provinsi / Regional", "Perguruan Tinggi / Lokal"], required: true },
-  { id: "q-l9", title: "3. Pilih Kategori Kompetisi", type: "Drop-down", options: ["Minat Khusus", "Riset dan Inovasi : SSH", "Riset dan Inovasi : STEM", "Seni dan Budaya", "Olahraga", "Agama / Keagamaan", "Lainnya"], required: true },
-  { id: "q-l10", title: "4. Nama Kompetisi / Lomba", type: "Jawaban singkat", required: true },
-  { id: "q-l11", title: "5. Nama Penyelenggara", type: "Jawaban singkat", required: true },
-  { id: "q-l12", title: "6. Jml Perguruan Tinggi / Negara Mengikuti", type: "Jawaban singkat", required: true },
-  { id: "q-l13", title: "7. Jml Peserta Yang Mengikuti", type: "Jawaban singkat", required: true },
-  { id: "q-l14", title: "8. Kepesertaan", type: "Pilihan ganda", options: ["Individu", "Kelompok / Tim"], required: true },
-  { id: "q-l15", title: "9. Bentuk Kegiatan", type: "Pilihan ganda", options: ["Daring / Hibrida", "Luring / Offline"], required: true },
-  { id: "q-l16", title: "10. Link / URL Publikasi Lomba", type: "Jawaban singkat", required: true },
-  { id: "q-l17", title: "11. Tanggal Sertifikat", type: "Tanggal", required: true },
-  { id: "q-l18", title: "12. Dokumen Sertifikat (Drive Link)", type: "Upload file", required: true },
-  { id: "q-l19", title: "13. Dokumentasi Penyerahan / Pemenang", type: "Upload file", required: true },
-  { id: "q-l20", title: "14. Dokumen Undangan / Surat Tugas", type: "Upload file", required: true },
-  { id: "q-l21", title: "Pernyataan Kebenaran Data", type: "Kotak Centang", options: ["Iya, Saya Menyatakan Data Yang Saya Isikan Sudah Sesuai dengan yang sebenar-benarnya"], required: true }
+  { id: "q-l1", sectionId: "sec-l1", title: "Apakah Saudara aktif dalam kegiatan Ormawa/UKM semester ini?", type: "Pilihan ganda", options: ["Ya, Aktif dalam Ormawa / UKM", "Tidak Aktif / Belum Mengikuti"], required: true, goToSectionBasedOnAnswer: false },
+  { id: "q-l2", sectionId: "sec-l1", title: "Sebutkan Kegiatan Ormawa yang Diikuti", type: "Jawaban singkat", required: true, placeholder: "Ketua BEM UNUSA, Panitia Bakti Sosial KIP-K" },
+  { id: "q-l3", sectionId: "sec-l1", title: "Bukti Keaktifan (SK Pengurus / Surat Tanda Aktif)", type: "Upload file", required: true },
+  { id: "q-l4", sectionId: "sec-l1", title: "Screenshot Bukti Anda Masih Bergabung di Grup WA Beasiswa KIPK", type: "Upload file", required: true },
+  { id: "q-l5", sectionId: "sec-l1", title: "Upload File Laporan Beasiswa KIP-K", type: "Upload file", required: true },
+  { id: "q-l6", sectionId: "sec-l2", title: "Jumlah Kompetisi yang Diikuti Semester Ini", type: "Drop-down", options: ["0 (Tidak Mengikuti)", "1 Kompetisi / Lomba", "2 Kompetisi / Lomba", "3+ Kompetisi / Lomba"], required: true },
+  { id: "q-l7", sectionId: "sec-l2", title: "1. Peringkat / Capaian Lomba", type: "Drop-down", options: ["Peserta", "Juara 1", "Juara 2", "Juara 3", "Juara Harapan", "Top 10 / Finalis", "Apresiasi Kejuaraan"], required: true },
+  { id: "q-l8", sectionId: "sec-l2", title: "2. Tingkat Kompetisi", type: "Drop-down", options: ["Nasional", "Internasional", "Provinsi / Regional", "Perguruan Tinggi / Lokal"], required: true },
+  { id: "q-l9", sectionId: "sec-l2", title: "3. Pilih Kategori Kompetisi", type: "Drop-down", options: ["Minat Khusus", "Riset dan Inovasi : SSH", "Riset dan Inovasi : STEM", "Seni dan Budaya", "Olahraga", "Agama / Keagamaan", "Lainnya"], required: true },
+  { id: "q-l10", sectionId: "sec-l2", title: "4. Nama Kompetisi / Lomba", type: "Jawaban singkat", required: true },
+  { id: "q-l11", sectionId: "sec-l2", title: "5. Nama Penyelenggara", type: "Jawaban singkat", required: true },
+  { id: "q-l12", sectionId: "sec-l2", title: "6. Jml Perguruan Tinggi / Negara Mengikuti", type: "Jawaban singkat", required: true },
+  { id: "q-l13", sectionId: "sec-l2", title: "7. Jml Peserta Yang Mengikuti", type: "Jawaban singkat", required: true },
+  { id: "q-l14", sectionId: "sec-l2", title: "8. Kepesertaan", type: "Pilihan ganda", options: ["Individu", "Kelompok / Tim"], required: true },
+  { id: "q-l15", sectionId: "sec-l2", title: "9. Bentuk Kegiatan", type: "Pilihan ganda", options: ["Daring / Hibrida", "Luring / Offline"], required: true },
+  { id: "q-l16", sectionId: "sec-l2", title: "10. Link / URL Publikasi Lomba", type: "Jawaban singkat", required: true },
+  { id: "q-l17", sectionId: "sec-l2", title: "11. Tanggal Sertifikat", type: "Tanggal", required: true },
+  { id: "q-l18", sectionId: "sec-l2", title: "12. Dokumen Sertifikat (Drive Link)", type: "Upload file", required: true },
+  { id: "q-l19", sectionId: "sec-l2", title: "13. Dokumentasi Penyerahan / Pemenang", type: "Upload file", required: true },
+  { id: "q-l20", sectionId: "sec-l2", title: "14. Dokumen Undangan / Surat Tugas", type: "Upload file", required: true },
+  { id: "q-l21", sectionId: "sec-l2", title: "Pernyataan Kebenaran Data", type: "Kotak Centang", options: ["Iya, Saya Menyatakan Data Yang Saya Isikan Sudah Sesuai dengan yang sebenar-benarnya"], required: true }
 ];
 
 export const INITIAL_MONEV_QUESTIONS: FormQuestionItem[] = [
-  { id: "q-m1", title: "Indeks Prestasi Semester (IPS) Semester Ini", type: "Jawaban singkat", required: true, placeholder: "3.85" },
-  { id: "q-m2", title: "Indeks Prestasi Kumulatif (IPK) Saat Ini", type: "Jawaban singkat", required: true, placeholder: "3.79" },
-  { id: "q-m3", title: "Upload KHS / Transkrip Nilai Akademik Terbaru", type: "Upload file", required: true },
-  { id: "q-m4", title: "Berkas Penunjang Kondisi Ekonomi Yang Dimiliki", type: "Drop-down", options: ["KARTU INDONESIA PINTAR (KIP)", "Bukti Terdaftar DTKS/DTSEN", "Kartu Keluarga Sejahtera (KKS)", "Surat Keterangan Tidak Mampu (SKTM)", "Tidak Ada"], required: true },
-  { id: "q-m5", title: "Upload Berkas Penunjang Ekonomi", type: "Upload file", required: true },
-  { id: "q-m6", title: "Slip Gaji / Surat Keterangan Penghasilan Orang Tua/Wali (Jadikan 1 PDF)", type: "Upload file", required: true },
-  { id: "q-m7", title: "Pekerjaan Orang Tua / Wali", type: "Jawaban singkat", required: true, placeholder: "Pegawai Swasta / Buruh Tani / Wiraswasta" },
-  { id: "q-m8", title: "Total Rata-rata Penghasilan Orang Tua / Wali per Bulan", type: "Drop-down", options: ["< Rp 1.000.000", "Rp 1.000.000 - Rp 2.500.000", "Rp 2.500.000 - Rp 4.000.000", "> Rp 4.000.000"], required: true },
-  { id: "q-m9", title: "Jumlah Tanggungan Keluarga (Orang)", type: "Jawaban singkat", required: true, placeholder: "3" }
+  { id: "q-m1", sectionId: "sec-m1", title: "Indeks Prestasi Semester (IPS) Semester Ini", type: "Jawaban singkat", required: true, placeholder: "3.85" },
+  { id: "q-m2", sectionId: "sec-m1", title: "Indeks Prestasi Kumulatif (IPK) Saat Ini", type: "Jawaban singkat", required: true, placeholder: "3.79" },
+  { id: "q-m3", sectionId: "sec-m1", title: "Upload KHS / Transkrip Nilai Akademik Terbaru", type: "Upload file", required: true },
+  { id: "q-m4", sectionId: "sec-m2", title: "Berkas Penunjang Kondisi Ekonomi Yang Dimiliki", type: "Drop-down", options: ["KARTU INDONESIA PINTAR (KIP)", "Bukti Terdaftar DTKS/DTSEN", "Kartu Keluarga Sejahtera (KKS)", "Surat Keterangan Tidak Mampu (SKTM)", "Tidak Ada"], required: true },
+  { id: "q-m5", sectionId: "sec-m2", title: "Upload Berkas Penunjang Ekonomi", type: "Upload file", required: true },
+  { id: "q-m6", sectionId: "sec-m2", title: "Slip Gaji / Surat Keterangan Penghasilan Orang Tua/Wali (Jadikan 1 PDF)", type: "Upload file", required: true },
+  { id: "q-m7", sectionId: "sec-m2", title: "Pekerjaan Orang Tua / Wali", type: "Jawaban singkat", required: true, placeholder: "Pegawai Swasta / Buruh Tani / Wiraswasta" },
+  { id: "q-m8", sectionId: "sec-m2", title: "Total Rata-rata Penghasilan Orang Tua / Wali per Bulan", type: "Drop-down", options: ["< Rp 1.000.000", "Rp 1.000.000 - Rp 2.500.000", "Rp 2.500.000 - Rp 4.000.000", "> Rp 4.000.000"], required: true },
+  { id: "q-m9", sectionId: "sec-m2", title: "Jumlah Tanggungan Keluarga (Orang)", type: "Jawaban singkat", required: true, placeholder: "3" }
 ];
 
 export const getRowLabel = (index: number): string => {
@@ -358,6 +418,10 @@ export default function AdminDashboard() {
   const [pencairanQuestions, setPencairanQuestions] = useState<FormQuestionItem[]>(INITIAL_PENCAIRAN_QUESTIONS);
   const [pelaporanQuestions, setPelaporanQuestions] = useState<FormQuestionItem[]>(INITIAL_PELAPORAN_QUESTIONS);
   const [monevQuestions, setMonevQuestions] = useState<FormQuestionItem[]>(INITIAL_MONEV_QUESTIONS);
+  const [pencairanSections, setPencairanSections] = useState<FormSection[]>(INITIAL_PENCAIRAN_SECTIONS);
+  const [pelaporanSections, setPelaporanSections] = useState<FormSection[]>(INITIAL_PELAPORAN_SECTIONS);
+  const [monevSections, setMonevSections] = useState<FormSection[]>(INITIAL_MONEV_SECTIONS);
+  const [activeEditingCardId, setActiveEditingCardId] = useState<string>("");
   const [showFormBuilderPreviewModal, setShowFormBuilderPreviewModal] = useState(false);
   const [gformSubTab, setGformSubTab] = useState<"pertanyaan" | "jawaban" | "setelan">("pertanyaan");
   const [gformResponseViewMode, setGformResponseViewMode] = useState<"tabel" | "ringkasan" | "pertanyaan" | "individual">("tabel");
@@ -385,10 +449,40 @@ export default function AdminDashboard() {
   const [showBeasiswaDetailModal, setShowBeasiswaDetailModal] = useState(false);
   const [selectedBeasiswaForDetail, setSelectedBeasiswaForDetail] = useState<BeasiswaItem | null>(null);
 
-  // KIP-K Documents Management filters
+  // KIP-K Documents Management filters & Stage Helper
+  const [docTahapFilter, setDocTahapFilter] = useState<"semua" | 1 | 2 | 3>("semua");
   const [docSearchQuery, setDocSearchQuery] = useState("");
   const [docStatusFilter, setDocStatusFilter] = useState<"Semua" | "Menunggu Review" | "Disetujui" | "Perlu Perbaikan">("Semua");
   const [docCategoryFilter, setDocCategoryFilter] = useState<string>("Semua");
+
+  const getTahapBadgeInfo = (category: KipkDocument["category"]) => {
+    const t = getTahapForCategory(category);
+    if (t === 1) {
+      return {
+        tahap: 1,
+        badgeText: "Tahap 1",
+        fullText: "Tahap 1: Pencairan",
+        badgeClass: "bg-purple-100 text-purple-900 border-purple-300 font-black",
+        dotClass: "bg-purple-600"
+      };
+    }
+    if (t === 2) {
+      return {
+        tahap: 2,
+        badgeText: "Tahap 2",
+        fullText: "Tahap 2: Keaktifan",
+        badgeClass: "bg-emerald-100 text-emerald-900 border-emerald-300 font-black",
+        dotClass: "bg-emerald-600"
+      };
+    }
+    return {
+      tahap: 3,
+      badgeText: "Tahap 3",
+      fullText: "Tahap 3: Monev",
+      badgeClass: "bg-blue-100 text-blue-900 border-blue-300 font-black",
+      dotClass: "bg-blue-600"
+    };
+  };
 
   // Document Validation Modal states
   const [showDocValidationModal, setShowDocValidationModal] = useState(false);
@@ -402,6 +496,7 @@ export default function AdminDashboard() {
   const [docViewMode, setDocViewMode] = useState<"grouped" | "flat">("grouped");
   const [expandedStudentRows, setExpandedStudentRows] = useState<string[]>([]);
   const [showStudentDocsModal, setShowStudentDocsModal] = useState(false);
+  const [studentDocsTahapFilter, setStudentDocsTahapFilter] = useState<1 | 2 | 3 | "all">("all");
   const [selectedStudentForDocs, setSelectedStudentForDocs] = useState<{
     userName: string;
     userNim: string;
@@ -545,6 +640,8 @@ export default function AdminDashboard() {
     } else {
       initDefaultKipkDocs();
     }
+
+
 
     // Load certificates list
     const storedCerts = localStorage.getItem("semadiksi_certificates_admin");
@@ -700,6 +797,10 @@ export default function AdminDashboard() {
         if (parsed.pencairan && Array.isArray(parsed.pencairan)) setPencairanQuestions(parsed.pencairan);
         if (parsed.pelaporan && Array.isArray(parsed.pelaporan)) setPelaporanQuestions(parsed.pelaporan);
         if (parsed.monev && Array.isArray(parsed.monev)) setMonevQuestions(parsed.monev);
+
+        if (parsed.pencairanSections && Array.isArray(parsed.pencairanSections)) setPencairanSections(parsed.pencairanSections);
+        if (parsed.pelaporanSections && Array.isArray(parsed.pelaporanSections)) setPelaporanSections(parsed.pelaporanSections);
+        if (parsed.monevSections && Array.isArray(parsed.monevSections)) setMonevSections(parsed.monevSections);
       } catch (e) { }
     }
 
@@ -739,6 +840,7 @@ export default function AdminDashboard() {
           } catch (err) { }
         }
       }
+
     };
 
     const handleCustomAttendanceSync = () => {
@@ -866,37 +968,201 @@ export default function AdminDashboard() {
     return pelaporanQuestions;
   };
 
-  const setActiveFormQuestions = (updated: FormQuestionItem[]) => {
-    let p = pencairanQuestions;
-    let m = monevQuestions;
-    let l = pelaporanQuestions;
+  const getActiveFormSections = (): FormSection[] => {
+    if (formBuilderActiveForm === "pencairan") return pencairanSections;
+    if (formBuilderActiveForm === "monev") return monevSections;
+    return pelaporanSections;
+  };
 
-    if (formBuilderActiveForm === "pencairan") {
-      setPencairanQuestions(updated);
-      p = updated;
-    } else if (formBuilderActiveForm === "monev") {
-      setMonevQuestions(updated);
-      m = updated;
-    } else {
-      setPelaporanQuestions(updated);
-      l = updated;
+  const saveAllFormBuilderConfig = (
+    updatedQuestions?: FormQuestionItem[],
+    updatedSections?: FormSection[]
+  ) => {
+    let pQ = pencairanQuestions;
+    let lQ = pelaporanQuestions;
+    let mQ = monevQuestions;
+
+    let pS = pencairanSections;
+    let lS = pelaporanSections;
+    let mS = monevSections;
+
+    if (updatedQuestions) {
+      if (formBuilderActiveForm === "pencairan") {
+        setPencairanQuestions(updatedQuestions);
+        pQ = updatedQuestions;
+      } else if (formBuilderActiveForm === "monev") {
+        setMonevQuestions(updatedQuestions);
+        mQ = updatedQuestions;
+      } else {
+        setPelaporanQuestions(updatedQuestions);
+        lQ = updatedQuestions;
+      }
     }
 
-    const allConfig = { pencairan: p, pelaporan: l, monev: m };
+    if (updatedSections) {
+      if (formBuilderActiveForm === "pencairan") {
+        setPencairanSections(updatedSections);
+        pS = updatedSections;
+      } else if (formBuilderActiveForm === "monev") {
+        setMonevSections(updatedSections);
+        mS = updatedSections;
+      } else {
+        setPelaporanSections(updatedSections);
+        lS = updatedSections;
+      }
+    }
+
+    const allConfig = {
+      pencairan: pQ,
+      pelaporan: lQ,
+      monev: mQ,
+      pencairanSections: pS,
+      pelaporanSections: lS,
+      monevSections: mS
+    };
     localStorage.setItem("semadiksi_custom_forms", JSON.stringify(allConfig));
     window.dispatchEvent(new Event("storage"));
   };
 
-  const handleFormBuilderAddQuestion = () => {
+  const setActiveFormQuestions = (updated: FormQuestionItem[]) => {
+    saveAllFormBuilderConfig(updated, undefined);
+  };
+
+  const setActiveFormSections = (updated: FormSection[]) => {
+    saveAllFormBuilderConfig(undefined, updated);
+  };
+
+  // Section Handlers
+  const handleFormBuilderAddSection = (afterSectionIndex?: number) => {
+    const sections = getActiveFormSections();
+    const newSecId = `sec-${Date.now()}`;
+    const newSec: FormSection = {
+      id: newSecId,
+      title: `Bagian ${sections.length + 1} Tanpa Judul`,
+      description: "Deskripsi bagian formulir (opsional)",
+      afterSectionAction: "next"
+    };
+
+    const updatedSections = [...sections];
+    if (afterSectionIndex !== undefined && afterSectionIndex >= 0 && afterSectionIndex < sections.length) {
+      updatedSections.splice(afterSectionIndex + 1, 0, newSec);
+    } else {
+      updatedSections.push(newSec);
+    }
+
+    // Add 1 default question to the new section
     const questions = getActiveFormQuestions();
     const newQ: FormQuestionItem = {
       id: `q-${Date.now()}`,
-      title: "Pertanyaan Tanpa Judul Baru",
-      type: "Jawaban singkat",
-      required: true,
+      sectionId: newSecId,
+      title: "Pertanyaan Tanpa Judul",
+      type: "Pilihan ganda",
+      options: ["Opsi 1"],
+      required: false,
+      placeholder: ""
+    };
+
+    saveAllFormBuilderConfig([...questions, newQ], updatedSections);
+    setActiveEditingCardId(newQ.id);
+  };
+
+  const handleFormBuilderDeleteSection = (sectionId: string) => {
+    const sections = getActiveFormSections();
+    if (sections.length <= 1) {
+      alert("Formulir harus memiliki minimal 1 bagian!");
+      return;
+    }
+
+    const secIdx = sections.findIndex(s => s.id === sectionId);
+    if (secIdx === -1) return;
+
+    // Target section to adopt questions
+    const targetSec = secIdx > 0 ? sections[secIdx - 1] : sections[secIdx + 1];
+
+    const questions = getActiveFormQuestions();
+    const updatedQuestions = questions.map(q => {
+      if (q.sectionId === sectionId) {
+        return { ...q, sectionId: targetSec.id };
+      }
+      return q;
+    });
+
+    const updatedSections = sections.filter(s => s.id !== sectionId);
+    saveAllFormBuilderConfig(updatedQuestions, updatedSections);
+  };
+
+  const handleFormBuilderUpdateSection = (sectionId: string, updates: Partial<FormSection>) => {
+    const sections = getActiveFormSections();
+    const updatedSections = sections.map(s => s.id === sectionId ? { ...s, ...updates } : s);
+    setActiveFormSections(updatedSections);
+  };
+
+  const handleFormBuilderMoveSection = (sectionId: string, direction: "up" | "down") => {
+    const sections = getActiveFormSections();
+    const idx = sections.findIndex(s => s.id === sectionId);
+    if (idx === -1) return;
+    if (direction === "up" && idx === 0) return;
+    if (direction === "down" && idx === sections.length - 1) return;
+
+    const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+    const updated = [...sections];
+    const temp = updated[idx];
+    updated[idx] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    setActiveFormSections(updated);
+  };
+
+  const handleFormBuilderDuplicateSection = (sectionId: string) => {
+    const sections = getActiveFormSections();
+    const idx = sections.findIndex(s => s.id === sectionId);
+    if (idx === -1) return;
+
+    const origSec = sections[idx];
+    const newSecId = `sec-${Date.now()}`;
+    const newSec: FormSection = {
+      ...origSec,
+      id: newSecId,
+      title: `${origSec.title} (Salinan)`
+    };
+
+    const updatedSections = [...sections];
+    updatedSections.splice(idx + 1, 0, newSec);
+
+    // Duplicate all questions in this section
+    const questions = getActiveFormQuestions();
+    const clonedQuestions: FormQuestionItem[] = [];
+    const updatedQuestions = [...questions];
+
+    questions.forEach(q => {
+      if (q.sectionId === sectionId) {
+        clonedQuestions.push({
+          ...q,
+          id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          sectionId: newSecId,
+          title: `${q.title} (Salinan)`
+        });
+      }
+    });
+
+    saveAllFormBuilderConfig([...updatedQuestions, ...clonedQuestions], updatedSections);
+  };
+
+  // Question Handlers
+  const handleFormBuilderAddQuestion = (targetSectionId?: string) => {
+    const sections = getActiveFormSections();
+    const currentSecId = targetSectionId || (sections.length > 0 ? sections[0].id : "sec-1");
+    const questions = getActiveFormQuestions();
+    const newQ: FormQuestionItem = {
+      id: `q-${Date.now()}`,
+      sectionId: currentSecId,
+      title: "Pertanyaan Tanpa Judul",
+      type: "Pilihan ganda",
+      options: ["Opsi 1"],
+      required: false,
       placeholder: "Tuliskan petunjuk atau format jawaban..."
     };
     setActiveFormQuestions([...questions, newQ]);
+    setActiveEditingCardId(newQ.id);
   };
 
   const handleFormBuilderDeleteQuestion = (id: string) => {
@@ -921,6 +1187,7 @@ export default function AdminDashboard() {
       const updated = [...questions];
       updated.splice(idx + 1, 0, dup);
       setActiveFormQuestions(updated);
+      setActiveEditingCardId(dup.id);
     }
   };
 
@@ -937,6 +1204,11 @@ export default function AdminDashboard() {
     updated[idx] = updated[targetIdx];
     updated[targetIdx] = temp;
     setActiveFormQuestions(updated);
+  };
+
+  const handleFormBuilderMoveQuestionToSection = (id: string, targetSectionId: string) => {
+    const questions = getActiveFormQuestions();
+    setActiveFormQuestions(questions.map(q => q.id === id ? { ...q, sectionId: targetSectionId } : q));
   };
 
   const handleFormBuilderUpdateTitle = (id: string, newTitle: string) => {
@@ -962,6 +1234,23 @@ export default function AdminDashboard() {
   const handleFormBuilderToggleRequired = (id: string) => {
     const questions = getActiveFormQuestions();
     setActiveFormQuestions(questions.map(q => q.id === id ? { ...q, required: !q.required } : q));
+  };
+
+  const handleFormBuilderToggleBranching = (id: string) => {
+    const questions = getActiveFormQuestions();
+    setActiveFormQuestions(questions.map(q => q.id === id ? { ...q, goToSectionBasedOnAnswer: !q.goToSectionBasedOnAnswer } : q));
+  };
+
+  const handleFormBuilderUpdateOptionBranch = (id: string, optIdx: number, target: string) => {
+    const questions = getActiveFormQuestions();
+    setActiveFormQuestions(questions.map(q => {
+      if (q.id === id) {
+        const branches = { ...(q.optionBranches || {}) };
+        branches[optIdx] = target;
+        return { ...q, optionBranches: branches };
+      }
+      return q;
+    }));
   };
 
   const handleFormBuilderAddOption = (id: string) => {
@@ -1005,10 +1294,13 @@ export default function AdminDashboard() {
     const allConfig = {
       pencairan: pencairanQuestions,
       pelaporan: pelaporanQuestions,
-      monev: monevQuestions
+      monev: monevQuestions,
+      pencairanSections,
+      pelaporanSections,
+      monevSections
     };
     localStorage.setItem("semadiksi_custom_forms", JSON.stringify(allConfig));
-    alert("Konfigurasi Formulir Google Form berhasil disimpan secara permanen!");
+    alert("Konfigurasi Formulir dan Bagian Google Form berhasil disimpan secara permanen!");
   };
 
   const getActiveFormSubmissions = () => {
@@ -1280,6 +1572,7 @@ export default function AdminDashboard() {
     userId?: string;
   }) => {
     setSelectedStudentForDocs(student);
+    setStudentDocsTahapFilter("all");
     setShowStudentDocsModal(true);
   };
 
@@ -1311,7 +1604,8 @@ export default function AdminDashboard() {
     } else {
       setAdminUploadStudentName("");
     }
-    setAdminUploadCategory("Keaktifan Ormawa");
+    const defaultCat = KIPK_TAHAP_CATEGORIES[1][0];
+    setAdminUploadCategory(defaultCat);
     setAdminUploadTitle("");
     setAdminUploadFileName("");
     setAdminUploadScore(90);
@@ -1360,6 +1654,7 @@ export default function AdminDashboard() {
         userUniversity: matchedUser.university || "UNUSA",
         userYearOfEntry: (matchedUser as any).yearOfEntry || "2024",
         category: adminUploadCategory,
+        tahap: getTahapForCategory(adminUploadCategory),
         title: adminUploadTitle,
         fileName: finalFileName,
         fileSize: "1.5 MB",
@@ -3305,7 +3600,7 @@ export default function AdminDashboard() {
                   {gformSubTab === "pertanyaan" && (
                     <>
                       <button
-                        onClick={handleFormBuilderAddQuestion}
+                        onClick={() => handleFormBuilderAddQuestion()}
                         className="px-4 py-2.5 bg-purple-800 hover:bg-purple-900 text-white font-bold rounded-full text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-sm">add_circle</span>
@@ -3421,225 +3716,535 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* MODE 1: PERTANYAAN (QUESTION BUILDER CANVAS) */}
+              {/* MODE 1: PERTANYAAN (GOOGLE FORMS MULTI-SECTION BUILDER CANVAS) */}
               {gformSubTab === "pertanyaan" && (
-                <div className="max-w-3xl mx-auto space-y-4">
-                  {/* Header Card (Classic Google Forms Top Stripe) */}
-                  <div className="bg-surface border-t-8 border-t-purple-800 border-x border-b border-surface-variant/30 rounded-2xl p-6 md:p-8 space-y-3 shadow-md">
-                    <h2 className="text-xl md:text-2xl font-black text-on-surface">
-                      {formBuilderActiveForm === "pencairan"
-                        ? "Formulir Pengajuan Pencairan Beasiswa KIP-K UNUSA"
-                        : formBuilderActiveForm === "pelaporan"
-                          ? "Formulir Pelaporan Keaktifan & Lomba KIP-K UNUSA"
-                          : "Formulir Monev Akademik & Kondisi Terkini Mahasiswa KIP-K"}
-                    </h2>
-                    <p className="text-xs md:text-sm text-on-surface-variant">
-                      {formBuilderActiveForm === "pencairan"
-                        ? "Formulir pengajuan berkas rekomendasi prodi, surat pernyataan, dan berkas pengusul KIP-K semesteran."
-                        : formBuilderActiveForm === "pelaporan"
-                          ? "Formulir pelaporan prestasi lomba, keaktifan Ormawa/UKM, screenshot grup WA, dan laporan beasiswa."
-                          : "Formulir evaluasi IPK/IPS semesteran, pemutakhiran berkas ekonomi, slip gaji ortu, dan tanggungan keluarga."}
-                    </p>
-                    <div className="pt-2 flex items-center justify-between text-[11px] text-purple-900 font-bold border-t border-surface-variant/20">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">lock</span>
-                        <span>Formulir Resmi Biro Kemahasiswaan UNUSA</span>
+                <div className="max-w-4xl mx-auto space-y-8 relative">
+                  {/* Floating Action Bar (Signature Google Forms Toolbar) */}
+                  <div className="hidden lg:flex flex-col items-center bg-surface border border-surface-variant/30 shadow-xl rounded-2xl p-1.5 fixed right-6 xl:right-16 top-1/3 z-30 space-y-1 backdrop-blur-md bg-surface/95">
+                    <button
+                      type="button"
+                      onClick={() => handleFormBuilderAddQuestion()}
+                      className="p-2.5 hover:bg-purple-100 hover:text-purple-900 text-on-surface-variant rounded-xl transition-all cursor-pointer group relative"
+                      title="Tambahkan pertanyaan"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                        Tambahkan pertanyaan
                       </span>
-                      <span className="text-red-600">* Wajib Diisi</span>
-                    </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => alert("Fitur impor pertanyaan dari Google Docs / Spreadsheet KIP-K UNUSA.")}
+                      className="p-2.5 hover:bg-purple-100 hover:text-purple-900 text-on-surface-variant rounded-xl transition-all cursor-pointer group relative"
+                      title="Impor pertanyaan"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">input</span>
+                      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                        Impor pertanyaan
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => alert("Tambahkan blok judul dan deskripsi teks tambahan.")}
+                      className="p-2.5 hover:bg-purple-100 hover:text-purple-900 text-on-surface-variant rounded-xl transition-all cursor-pointer group relative"
+                      title="Tambahkan judul dan deskripsi"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">title</span>
+                      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                        Tambahkan judul dan deskripsi
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => alert("Tambahkan gambar pendukung ke formulir.")}
+                      className="p-2.5 hover:bg-purple-100 hover:text-purple-900 text-on-surface-variant rounded-xl transition-all cursor-pointer group relative"
+                      title="Tambahkan gambar"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">image</span>
+                      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                        Tambahkan gambar
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => alert("Tambahkan video penjelasan YouTube Kemahasiswaan.")}
+                      className="p-2.5 hover:bg-purple-100 hover:text-purple-900 text-on-surface-variant rounded-xl transition-all cursor-pointer group relative"
+                      title="Tambahkan video"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">smart_display</span>
+                      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                        Tambahkan video
+                      </span>
+                    </button>
+
+                    <div className="w-6 h-px bg-surface-variant/30 my-1"></div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleFormBuilderAddSection()}
+                      className="p-2.5 bg-purple-50 hover:bg-purple-700 hover:text-white text-purple-900 rounded-xl transition-all cursor-pointer group relative"
+                      title="Tambahkan bagian"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">view_agenda</span>
+                      <span className="absolute right-full mr-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-gray-900 text-white text-[11px] rounded-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap transition-opacity">
+                        Tambahkan bagian (Section)
+                      </span>
+                    </button>
                   </div>
 
-                  {/* QUESTION CARDS LIST */}
-                  {getActiveFormQuestions().map((q, idx) => (
-                    <div
-                      key={q.id}
-                      className="bg-surface border border-surface-variant/30 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all space-y-4 border-l-4 border-l-purple-700"
-                    >
-                      <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <span className="px-2.5 py-1 bg-purple-100 text-purple-900 rounded-lg text-xs font-black font-mono">
-                            #{idx + 1}
-                          </span>
-                          <input
-                            type="text"
-                            value={q.title}
-                            onChange={(e) => handleFormBuilderUpdateTitle(q.id, e.target.value)}
-                            placeholder="Ketikkan Judul Pertanyaan..."
-                            className="w-full sm:w-80 px-3 py-2 bg-surface-container-low border border-surface-variant/40 rounded-xl text-xs font-bold text-on-surface focus:outline-none focus:border-purple-700"
-                          />
-                        </div>
+                  {/* SECTIONS LIST */}
+                  {getActiveFormSections().map((sec, secIdx) => {
+                    const sections = getActiveFormSections();
+                    const allQuestions = getActiveFormQuestions();
+                    // Filter questions that belong to this section
+                    // If a question doesn't have a sectionId and this is secIdx 0, attach it here
+                    const sectionQuestions = allQuestions.filter(q => {
+                      if (!q.sectionId && secIdx === 0) return true;
+                      return q.sectionId === sec.id;
+                    });
 
-                        <select
-                          value={q.type}
-                          onChange={(e: any) => handleFormBuilderUpdateType(q.id, e.target.value)}
-                          className="w-full sm:w-52 px-3 py-2 bg-surface-container-low border border-surface-variant/40 rounded-xl text-xs font-bold text-purple-900 focus:outline-none cursor-pointer"
-                        >
-                          <option value="Jawaban singkat">📝 Jawaban singkat</option>
-                          <option value="Paragraf">📄 Paragraf</option>
-                          <option value="Pilihan ganda">🔘 Pilihan ganda</option>
-                          <option value="Kotak Centang">☑️ Kotak Centang</option>
-                          <option value="Drop-down">🔽 Drop-down</option>
-                          <option value="Upload file">☁️ Upload file</option>
-                          <option value="Skala linier">📏 Skala linier</option>
-                          <option value="Tanggal">📅 Tanggal</option>
-                        </select>
-                      </div>
-
-                      <div className="bg-surface-container-lowest p-4 rounded-xl border border-surface-variant/20 space-y-3">
-                        {q.type === "Jawaban singkat" && (
-                          <div className="space-y-1">
-                            <span className="text-[11px] text-outline italic">Pratinjau input mahasiswa:</span>
-                            <input
-                              type="text"
-                              disabled
-                              placeholder={q.placeholder || "Teks jawaban singkat..."}
-                              className="w-full md:w-80 px-3 py-2 bg-surface border border-surface-variant/30 rounded-xl text-xs text-on-surface-variant/50 font-mono"
-                            />
+                    return (
+                      <div key={sec.id} className="space-y-4">
+                        {/* Section Header Card with Google Forms Top Pill Badge */}
+                        <div className="relative">
+                          {/* Exact Google Forms Badge: "Bagian X dari Y" */}
+                          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-purple-700 text-white rounded-t-xl text-xs font-black shadow-sm tracking-wide">
+                            <span className="material-symbols-outlined text-[15px]">view_agenda</span>
+                            <span>Bagian {secIdx + 1} dari {sections.length}</span>
                           </div>
-                        )}
 
-                        {q.type === "Paragraf" && (
-                          <div className="space-y-1">
-                            <span className="text-[11px] text-outline italic">Pratinjau input mahasiswa:</span>
-                            <textarea
-                              disabled
-                              rows={2}
-                              placeholder="Teks jawaban panjang paragraf..."
-                              className="w-full px-3 py-2 bg-surface border border-surface-variant/30 rounded-xl text-xs text-on-surface-variant/50"
-                            />
-                          </div>
-                        )}
+                          <div className="bg-surface border-t-8 border-t-purple-800 border-x border-b border-surface-variant/30 rounded-b-2xl rounded-tr-2xl p-6 md:p-8 space-y-4 shadow-md">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                              <input
+                                type="text"
+                                value={sec.title}
+                                onChange={(e) => handleFormBuilderUpdateSection(sec.id, { title: e.target.value })}
+                                placeholder="Judul Bagian Formulir..."
+                                className="w-full text-xl md:text-2xl font-black text-on-surface bg-transparent border-b border-transparent hover:border-purple-300 focus:border-purple-800 focus:outline-none transition-colors pb-1"
+                              />
 
-                        {["Pilihan ganda", "Kotak Centang", "Drop-down"].includes(q.type) && (
-                          <div className="space-y-2">
-                            <span className="text-[11px] font-bold text-on-surface block">Daftar Opsi Jawaban:</span>
-                            {q.options?.map((opt, optIdx) => (
-                              <div key={optIdx} className="flex items-center gap-2">
-                                {q.type === "Pilihan ganda" && <span className="material-symbols-outlined text-outline text-sm">radio_button_unchecked</span>}
-                                {q.type === "Kotak Centang" && <span className="material-symbols-outlined text-outline text-sm">check_box_outline_blank</span>}
-                                {q.type === "Drop-down" && <span className="text-xs font-mono text-outline">{optIdx + 1}.</span>}
-
-                                <input
-                                  type="text"
-                                  value={opt}
-                                  onChange={(e) => handleFormBuilderUpdateOption(q.id, optIdx, e.target.value)}
-                                  className="px-3 py-1.5 bg-surface border border-surface-variant/30 rounded-xl text-xs font-medium text-on-surface w-full max-w-xs focus:outline-none focus:border-purple-700"
-                                />
-
+                              {/* Section Top Actions (Duplicate, Reorder, Delete) */}
+                              <div className="flex items-center gap-1 shrink-0 bg-surface-container-low px-2 py-1 rounded-xl border border-surface-variant/20">
                                 <button
                                   type="button"
-                                  onClick={() => handleFormBuilderDeleteOption(q.id, optIdx)}
-                                  className="p-1 hover:bg-error-container/20 text-error rounded-lg cursor-pointer"
-                                  title="Hapus Opsi"
+                                  onClick={() => handleFormBuilderMoveSection(sec.id, "up")}
+                                  disabled={secIdx === 0}
+                                  className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg disabled:opacity-30 cursor-pointer"
+                                  title="Pindahkan Bagian Ke Atas"
                                 >
-                                  <span className="material-symbols-outlined text-sm">close</span>
+                                  <span className="material-symbols-outlined text-sm">arrow_upward</span>
                                 </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleFormBuilderMoveSection(sec.id, "down")}
+                                  disabled={secIdx === sections.length - 1}
+                                  className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg disabled:opacity-30 cursor-pointer"
+                                  title="Pindahkan Bagian Ke Bawah"
+                                >
+                                  <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleFormBuilderDuplicateSection(sec.id)}
+                                  className="p-1.5 text-on-surface-variant hover:bg-purple-100 hover:text-purple-900 rounded-lg cursor-pointer"
+                                  title="Duplikat Bagian Beserta Pertanyaannya"
+                                >
+                                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                                </button>
+                                {sections.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleFormBuilderDeleteSection(sec.id)}
+                                    className="p-1.5 text-error hover:bg-error-container/20 rounded-lg cursor-pointer"
+                                    title="Hapus Bagian (Pertanyaan dipindahkan)"
+                                  >
+                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                  </button>
+                                )}
                               </div>
-                            ))}
+                            </div>
 
+                            <textarea
+                              rows={2}
+                              value={sec.description || ""}
+                              onChange={(e) => handleFormBuilderUpdateSection(sec.id, { description: e.target.value })}
+                              placeholder="Deskripsi formulir / bagian (opsional)..."
+                              className="w-full text-xs md:text-sm text-on-surface-variant bg-transparent border-b border-transparent hover:border-purple-300 focus:border-purple-800 focus:outline-none transition-colors resize-none"
+                            />
+
+                            <div className="pt-2 flex flex-wrap items-center justify-between text-[11px] text-purple-900 font-bold border-t border-surface-variant/20 gap-2">
+                              <span className="flex items-center gap-1 text-on-surface-variant font-normal">
+                                <span className="material-symbols-outlined text-sm text-purple-700">info</span>
+                                <span>Formulir ini otomatis mengumpulkan email dari semua responden.</span>
+                              </span>
+                              <span className="text-purple-800 bg-purple-50 px-2.5 py-1 rounded-md">
+                                {sectionQuestions.length} Pertanyaan di Bagian Ini
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* QUESTIONS INSIDE THIS SECTION */}
+                        <div className="space-y-4 pl-0 sm:pl-2">
+                          {sectionQuestions.map((q, qIdx) => {
+                            const isSelected = activeEditingCardId === q.id;
+                            const globalIndex = allQuestions.findIndex(item => item.id === q.id);
+
+                            return (
+                              <div
+                                key={q.id}
+                                onClick={() => setActiveEditingCardId(q.id)}
+                                className={`bg-surface border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all space-y-4 relative ${
+                                  isSelected
+                                    ? "border-l-6 border-l-purple-700 border-surface-variant/40 ring-1 ring-purple-600/20"
+                                    : "border-l-4 border-l-purple-400 border-surface-variant/30"
+                                }`}
+                              >
+                                {/* Drag Handle Dots in Top Center (Exact Google Forms signature) */}
+                                <div className="flex justify-center -mt-3 text-outline/40 hover:text-outline cursor-grab">
+                                  <span className="material-symbols-outlined text-base">drag_indicator</span>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
+                                  <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+                                    <span className="px-2.5 py-1 bg-purple-100 text-purple-900 rounded-lg text-xs font-black font-mono shrink-0">
+                                      #{globalIndex + 1}
+                                    </span>
+                                    <div className="relative w-full">
+                                      <input
+                                        type="text"
+                                        value={q.title}
+                                        onChange={(e) => handleFormBuilderUpdateTitle(q.id, e.target.value)}
+                                        placeholder="Pertanyaan Tanpa Judul..."
+                                        className="w-full px-3 py-2 bg-surface-container-low border border-surface-variant/40 rounded-xl text-xs md:text-sm font-bold text-on-surface focus:outline-none focus:border-purple-700 focus:bg-white transition-all pr-8"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => alert("Tambahkan gambar ke pertanyaan ini.")}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-outline hover:text-purple-800"
+                                        title="Sisipkan gambar"
+                                      >
+                                        <span className="material-symbols-outlined text-sm">image</span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <select
+                                    value={q.type}
+                                    onChange={(e: any) => handleFormBuilderUpdateType(q.id, e.target.value)}
+                                    className="w-full sm:w-52 px-3 py-2 bg-surface-container-low border border-surface-variant/40 rounded-xl text-xs font-bold text-purple-900 focus:outline-none cursor-pointer shrink-0"
+                                  >
+                                    <option value="Pilihan ganda">🔘 Pilihan ganda</option>
+                                    <option value="Kotak Centang">☑️ Kotak Centang</option>
+                                    <option value="Drop-down">🔽 Drop-down</option>
+                                    <option value="Jawaban singkat">📝 Jawaban singkat</option>
+                                    <option value="Paragraf">📄 Paragraf</option>
+                                    <option value="Upload file">☁️ Upload file</option>
+                                    <option value="Skala linier">📏 Skala linier</option>
+                                    <option value="Tanggal">📅 Tanggal</option>
+                                  </select>
+                                </div>
+
+                                {/* QUESTION INPUT CANVAS */}
+                                <div className="bg-surface-container-lowest p-4 rounded-xl border border-surface-variant/20 space-y-3">
+                                  {q.type === "Jawaban singkat" && (
+                                    <div className="space-y-1">
+                                      <span className="text-[11px] text-outline italic">Pratinjau input mahasiswa:</span>
+                                      <input
+                                        type="text"
+                                        disabled
+                                        placeholder={q.placeholder || "Teks jawaban singkat..."}
+                                        className="w-full md:w-80 px-3 py-2 bg-surface border border-surface-variant/30 rounded-xl text-xs text-on-surface-variant/50 font-mono"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {q.type === "Paragraf" && (
+                                    <div className="space-y-1">
+                                      <span className="text-[11px] text-outline italic">Pratinjau input mahasiswa:</span>
+                                      <textarea
+                                        disabled
+                                        rows={2}
+                                        placeholder="Teks jawaban panjang paragraf..."
+                                        className="w-full px-3 py-2 bg-surface border border-surface-variant/30 rounded-xl text-xs text-on-surface-variant/50"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {/* OPTIONS (With Exact Google Forms Branching Selectors!) */}
+                                  {["Pilihan ganda", "Kotak Centang", "Drop-down"].includes(q.type) && (
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-[11px] font-bold text-on-surface">Daftar Opsi Jawaban:</span>
+                                        {["Pilihan ganda", "Drop-down"].includes(q.type) && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleFormBuilderToggleBranching(q.id)}
+                                            className={`text-[11px] font-bold px-2 py-1 rounded-md transition-colors flex items-center gap-1 cursor-pointer ${
+                                              q.goToSectionBasedOnAnswer
+                                                ? "bg-purple-100 text-purple-900 border border-purple-300"
+                                                : "text-on-surface-variant hover:bg-surface-container-high"
+                                            }`}
+                                            title="Buka bagian berdasarkan jawaban yang dipilih responden"
+                                          >
+                                            <span className="material-symbols-outlined text-[14px]">alt_route</span>
+                                            <span>{q.goToSectionBasedOnAnswer ? "Percabangan Aktif" : "Aktifkan Percabangan"}</span>
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {q.options?.map((opt, optIdx) => (
+                                        <div key={optIdx} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 group">
+                                          <div className="flex items-center gap-2 w-full sm:w-auto flex-1">
+                                            {q.type === "Pilihan ganda" && <span className="material-symbols-outlined text-outline text-sm">radio_button_unchecked</span>}
+                                            {q.type === "Kotak Centang" && <span className="material-symbols-outlined text-outline text-sm">check_box_outline_blank</span>}
+                                            {q.type === "Drop-down" && <span className="text-xs font-mono text-outline">{optIdx + 1}.</span>}
+
+                                            <input
+                                              type="text"
+                                              value={opt}
+                                              onChange={(e) => handleFormBuilderUpdateOption(q.id, optIdx, e.target.value)}
+                                              className="px-3 py-1.5 bg-surface border-b-2 border-transparent focus:border-purple-700 hover:border-surface-variant/60 rounded-lg text-xs font-medium text-on-surface w-full max-w-sm focus:outline-none"
+                                            />
+
+                                            <button
+                                              type="button"
+                                              onClick={() => alert("Tambahkan gambar ke opsi ini.")}
+                                              className="p-1 text-outline hover:text-purple-800 rounded-md cursor-pointer"
+                                              title="Tambahkan gambar pada opsi"
+                                            >
+                                              <span className="material-symbols-outlined text-sm">image</span>
+                                            </button>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => handleFormBuilderDeleteOption(q.id, optIdx)}
+                                              className="p-1 hover:bg-error-container/20 text-error rounded-md cursor-pointer"
+                                              title="Hapus Opsi"
+                                            >
+                                              <span className="material-symbols-outlined text-sm">close</span>
+                                            </button>
+                                          </div>
+
+                                          {/* EXACT MATCH USER IMAGE: "Lanjutkan ke bagian berikut" Branching Dropdown */}
+                                          {(q.goToSectionBasedOnAnswer || ["Pilihan ganda", "Drop-down"].includes(q.type)) && (
+                                            <div className="sm:ml-auto w-full sm:w-auto pl-6 sm:pl-0">
+                                              <select
+                                                value={q.optionBranches?.[optIdx] || "next"}
+                                                onChange={(e) => handleFormBuilderUpdateOptionBranch(q.id, optIdx, e.target.value)}
+                                                className="w-full sm:w-56 px-2.5 py-1 bg-surface border border-surface-variant/30 rounded-lg text-[11px] font-semibold text-purple-900 focus:outline-none focus:border-purple-700 cursor-pointer"
+                                              >
+                                                <option value="next">Lanjutkan ke bagian berikut</option>
+                                                {sections.map((targetSec, targetIdx) => (
+                                                  <option key={targetSec.id} value={targetSec.id}>
+                                                    Buka bagian {targetIdx + 1} ({targetSec.title.slice(0, 18)}...)
+                                                  </option>
+                                                ))}
+                                                <option value="submit">Kirim formulir</option>
+                                              </select>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+
+                                      <div className="flex items-center gap-3 pt-1 text-xs">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleFormBuilderAddOption(q.id)}
+                                          className="text-purple-900 hover:text-purple-700 font-bold inline-flex items-center gap-1 cursor-pointer"
+                                        >
+                                          <span className="material-symbols-outlined text-sm">add</span>
+                                          <span>Tambahkan opsi</span>
+                                        </button>
+                                        <span className="text-outline">atau</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const opts = q.options || [];
+                                            if (!opts.includes("Lainnya")) {
+                                              setActiveFormQuestions(allQuestions.map(item => item.id === q.id ? { ...item, options: [...opts, "Lainnya"] } : item));
+                                            }
+                                          }}
+                                          className="text-purple-800 hover:underline font-bold cursor-pointer"
+                                        >
+                                          tambahkan &quot;Lainnya&quot;
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {q.type === "Upload file" && (
+                                    <div className="p-3 bg-surface border border-dashed border-purple-300 rounded-xl text-center space-y-1">
+                                      <span className="material-symbols-outlined text-purple-700 text-2xl">cloud_upload</span>
+                                      <p className="text-xs font-bold text-on-surface">Upload File Dokumen Mahasiswa</p>
+                                      <p className="text-[10px] text-outline">Dukungan unggah file PDF/Gambar atau Tautan Google Drive</p>
+                                    </div>
+                                  )}
+
+                                  {q.type === "Tanggal" && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="material-symbols-outlined text-purple-700">calendar_month</span>
+                                      <input
+                                        type="date"
+                                        disabled
+                                        className="px-3 py-1.5 bg-surface border border-surface-variant/30 rounded-xl text-xs text-on-surface-variant/50"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {q.type === "Skala linier" && (
+                                    <div className="flex items-center gap-3 text-xs font-bold text-on-surface">
+                                      <span>1 (Buruk)</span>
+                                      <div className="flex gap-2">
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                          <span key={n} className="w-7 h-7 rounded-full bg-purple-100 text-purple-900 flex items-center justify-center font-bold text-xs">
+                                            {n}
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <span>5 (Sangat Baik)</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* QUESTION BOTTOM TOOLBAR */}
+                                <div className="pt-3 border-t border-surface-variant/20 flex flex-wrap justify-between items-center gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleFormBuilderMoveQuestion(q.id, "up")}
+                                        disabled={globalIndex === 0}
+                                        className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-xl disabled:opacity-30 cursor-pointer"
+                                        title="Geser Pertanyaan Ke Atas"
+                                      >
+                                        <span className="material-symbols-outlined text-sm">arrow_upward</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleFormBuilderMoveQuestion(q.id, "down")}
+                                        disabled={globalIndex === allQuestions.length - 1}
+                                        className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-xl disabled:opacity-30 cursor-pointer"
+                                        title="Geser Pertanyaan Ke Bawah"
+                                      >
+                                        <span className="material-symbols-outlined text-sm">arrow_downward</span>
+                                      </button>
+                                    </div>
+
+                                    {sections.length > 1 && (
+                                      <div className="flex items-center gap-1 text-[11px] text-on-surface-variant">
+                                        <span>Pindah ke:</span>
+                                        <select
+                                          value={q.sectionId || sec.id}
+                                          onChange={(e) => handleFormBuilderMoveQuestionToSection(q.id, e.target.value)}
+                                          className="px-2 py-1 bg-surface-container-low border border-surface-variant/30 rounded-lg text-xs font-bold text-purple-900 cursor-pointer"
+                                        >
+                                          {sections.map((targetSec, tIdx) => (
+                                            <option key={targetSec.id} value={targetSec.id}>
+                                              Bagian {tIdx + 1}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleFormBuilderDuplicateQuestion(q.id)}
+                                      className="p-1.5 text-on-surface-variant hover:bg-purple-100 hover:text-purple-900 rounded-xl transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+                                      title="Duplikat Pertanyaan"
+                                    >
+                                      <span className="material-symbols-outlined text-sm">content_copy</span>
+                                      <span className="hidden sm:inline">Duplikat</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleFormBuilderDeleteQuestion(q.id)}
+                                      className="p-1.5 text-error hover:bg-error-container/20 rounded-xl transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+                                      title="Hapus Pertanyaan"
+                                    >
+                                      <span className="material-symbols-outlined text-sm">delete</span>
+                                      <span className="hidden sm:inline">Hapus</span>
+                                    </button>
+
+                                    <div className="h-4 w-px bg-surface-variant/30"></div>
+
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <span className="text-xs font-bold text-on-surface">Wajib diisi</span>
+                                      <input
+                                        type="checkbox"
+                                        checked={q.required}
+                                        onChange={() => handleFormBuilderToggleRequired(q.id)}
+                                        className="w-4 h-4 rounded-xs border-purple-300 accent-purple-800 cursor-pointer"
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Quick Add Question Button for this section */}
+                          <div className="flex items-center justify-center pt-2">
                             <button
                               type="button"
-                              onClick={() => handleFormBuilderAddOption(q.id)}
-                              className="mt-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-xl text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
+                              onClick={() => handleFormBuilderAddQuestion(sec.id)}
+                              className="px-4 py-2 border border-dashed border-purple-400 hover:border-purple-700 bg-purple-50/50 hover:bg-purple-100 text-purple-900 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
                             >
                               <span className="material-symbols-outlined text-sm">add</span>
-                              <span>Tambah Opsi</span>
+                              <span>Tambah Pertanyaan di Bagian {secIdx + 1}</span>
                             </button>
                           </div>
-                        )}
+                        </div>
 
-                        {q.type === "Upload file" && (
-                          <div className="p-3 bg-surface border border-dashed border-purple-300 rounded-xl text-center space-y-1">
-                            <span className="material-symbols-outlined text-purple-700 text-2xl">cloud_upload</span>
-                            <p className="text-xs font-bold text-on-surface">Upload File Dokumen Mahasiswa</p>
-                            <p className="text-[10px] text-outline">Dukungan unggah file PDF/Gambar atau Tautan Google Drive</p>
-                          </div>
-                        )}
-
-                        {q.type === "Tanggal" && (
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-purple-700">calendar_month</span>
-                            <input
-                              type="date"
-                              disabled
-                              className="px-3 py-1.5 bg-surface border border-surface-variant/30 rounded-xl text-xs text-on-surface-variant/50"
-                            />
-                          </div>
-                        )}
-
-                        {q.type === "Skala linier" && (
-                          <div className="flex items-center gap-3 text-xs font-bold text-on-surface">
-                            <span>1 (Buruk)</span>
-                            <div className="flex gap-2">
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                <span key={n} className="w-7 h-7 rounded-full bg-purple-100 text-purple-900 flex items-center justify-center font-bold text-xs">
-                                  {n}
-                                </span>
-                              ))}
+                        {/* SECTION DIVIDER & FLOW NAVIGATION (Exact Google Forms Flow: "Setelah bagian X:") */}
+                        {secIdx < sections.length - 1 && (
+                          <div className="p-4 bg-surface border border-surface-variant/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                            <div className="flex items-center gap-2 text-xs font-bold text-on-surface">
+                              <span className="material-symbols-outlined text-purple-700 text-base">arrow_forward</span>
+                              <span>Setelah bagian {secIdx + 1}:</span>
                             </div>
-                            <span>5 (Sangat Baik)</span>
+
+                            <select
+                              value={sec.afterSectionAction || "next"}
+                              onChange={(e) => handleFormBuilderUpdateSection(sec.id, { afterSectionAction: e.target.value })}
+                              className="w-full sm:w-72 px-3 py-2 bg-surface-container-low border border-surface-variant/40 rounded-xl text-xs font-bold text-purple-900 focus:outline-none focus:border-purple-700 cursor-pointer"
+                            >
+                              <option value="next">Lanjutkan ke bagian berikut</option>
+                              {sections.map((targetSec, tIdx) => {
+                                if (tIdx === secIdx) return null;
+                                return (
+                                  <option key={targetSec.id} value={targetSec.id}>
+                                    Buka bagian {tIdx + 1} ({targetSec.title.slice(0, 22)}...)
+                                  </option>
+                                );
+                              })}
+                              <option value="submit">Kirim formulir</option>
+                            </select>
                           </div>
                         )}
                       </div>
+                    );
+                  })}
 
-                      <div className="pt-3 border-t border-surface-variant/20 flex flex-wrap justify-between items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleFormBuilderMoveQuestion(q.id, "up")}
-                            disabled={idx === 0}
-                            className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-xl disabled:opacity-30 cursor-pointer"
-                            title="Geser Pertanyaan Ke Atas"
-                          >
-                            <span className="material-symbols-outlined text-sm">arrow_upward</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleFormBuilderMoveQuestion(q.id, "down")}
-                            disabled={idx === getActiveFormQuestions().length - 1}
-                            className="p-1.5 text-on-surface-variant hover:bg-surface-container-high rounded-xl disabled:opacity-30 cursor-pointer"
-                            title="Geser Pertanyaan Ke Bawah"
-                          >
-                            <span className="material-symbols-outlined text-sm">arrow_downward</span>
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                          <button
-                            type="button"
-                            onClick={() => handleFormBuilderDuplicateQuestion(q.id)}
-                            className="p-1.5 text-on-surface-variant hover:bg-purple-100 hover:text-purple-900 rounded-xl transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
-                            title="Duplikat Pertanyaan"
-                          >
-                            <span className="material-symbols-outlined text-sm">content_copy</span>
-                            <span className="hidden sm:inline">Duplikat</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleFormBuilderDeleteQuestion(q.id)}
-                            className="p-1.5 text-error hover:bg-error-container/20 rounded-xl transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
-                            title="Hapus Pertanyaan"
-                          >
-                            <span className="material-symbols-outlined text-sm">delete</span>
-                            <span className="hidden sm:inline">Hapus</span>
-                          </button>
-
-                          <div className="h-4 w-px bg-surface-variant/30"></div>
-
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <span className="text-xs font-bold text-on-surface">Wajib diisi</span>
-                            <input
-                              type="checkbox"
-                              checked={q.required}
-                              onChange={() => handleFormBuilderToggleRequired(q.id)}
-                              className="w-4 h-4 rounded-xs border-purple-300 accent-purple-800 cursor-pointer"
-                            />
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  {/* Add New Section Button Bottom Bar */}
+                  <div className="pt-4 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => handleFormBuilderAddSection()}
+                      className="px-6 py-3 bg-purple-700 hover:bg-purple-800 text-white rounded-2xl text-xs md:text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-base">view_agenda</span>
+                      <span>+ Tambahkan Bagian Baru (Section)</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -5065,100 +5670,163 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Filters & Search Toolbar */}
-              <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
-                {/* Search box */}
-                <div className="relative flex-1">
-                  <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">
-                    search
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Cari nama mahasiswa, NIM, judul berkas, atau nama file..."
-                    value={docSearchQuery}
-                    onChange={(e) => setDocSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-surface-container border border-surface-variant/20 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-xs font-semibold text-on-surface"
-                  />
-                  {docSearchQuery && (
-                    <button
-                      onClick={() => setDocSearchQuery("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">close</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Filter Category, Status & View Mode */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Category Dropdown */}
-                  <select
-                    value={docCategoryFilter}
-                    onChange={(e) => setDocCategoryFilter(e.target.value)}
-                    className="px-3 py-2.5 bg-surface-container border border-surface-variant/20 rounded-xl text-xs font-bold text-on-surface outline-none cursor-pointer"
-                  >
-                    <option value="Semua">📁 Semua Kategori</option>
-                    <option value="Kartu KIP-K">Kartu KIP-K</option>
-                    <option value="SKTM">SKTM</option>
-                    <option value="Keaktifan Ormawa">Keaktifan Ormawa</option>
-                    <option value="Kegiatan Webinar Soft Skill">Webinar Soft Skill</option>
-                    <option value="Keikutsertaan Kompetisi">Keikutsertaan Kompetisi</option>
-                    <option value="Kegiatan Semadiksi">Kegiatan Semadiksi</option>
-                    <option value="KHS / Transkrip">KHS / Transkrip</option>
-                    <option value="Dokumen Tambahan">Dokumen Tambahan</option>
-                  </select>
-
-                  {/* Status Pills */}
-                  <div className="flex gap-1 bg-surface-container p-1 rounded-xl text-xs font-bold">
-                    {(["Semua", "Menunggu Review", "Disetujui", "Perlu Perbaikan"] as const).map((st) => (
+              {/* Tahap Tabs Filter */}
+                <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm">
+                  <p className="text-[10px] font-bold text-outline uppercase tracking-widest mb-3">Filter Berdasarkan Tahap</p>
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { key: "semua" as const, label: "Semua Tahap", icon: "folder_open", activeBg: "bg-slate-700 text-white", inactiveColor: "text-on-surface-variant", count: kipkDocs.length },
+                      { key: 1 as const, label: "Tahap 1", sub: "Pencairan", icon: "account_balance_wallet", activeBg: "bg-blue-600 text-white", inactiveColor: "text-blue-700", count: kipkDocs.filter(d => (d.tahap || getTahapForCategory(d.category)) === 1).length },
+                      { key: 2 as const, label: "Tahap 2", sub: "Pelaporan Keaktifan", icon: "groups", activeBg: "bg-violet-600 text-white", inactiveColor: "text-violet-700", count: kipkDocs.filter(d => (d.tahap || getTahapForCategory(d.category)) === 2).length },
+                      { key: 3 as const, label: "Tahap 3", sub: "Monev Akademik", icon: "school", activeBg: "bg-emerald-600 text-white", inactiveColor: "text-emerald-700", count: kipkDocs.filter(d => (d.tahap || getTahapForCategory(d.category)) === 3).length },
+                    ]).map((tab) => (
                       <button
-                        key={st}
-                        onClick={() => setDocStatusFilter(st)}
-                        className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-[11px] ${docStatusFilter === st
-                          ? "bg-primary text-white shadow-sm font-bold"
-                          : "text-on-surface-variant hover:bg-surface-variant/20"
-                          }`}
+                        key={String(tab.key)}
+                        onClick={() => { setDocTahapFilter(tab.key); setDocCategoryFilter("Semua"); }}
+                        className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                          docTahapFilter === tab.key
+                            ? tab.activeBg + " border-transparent shadow-md scale-[1.02]"
+                            : "bg-surface-container border-surface-variant/20 " + tab.inactiveColor + " hover:border-surface-variant/50"
+                        }`}
                       >
-                        {st === "Menunggu Review" ? "Pending" : st}
+                        <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
+                        <span className="flex flex-col items-start leading-tight">
+                          <span>{tab.label}</span>
+                          {"sub" in tab && <span className={`text-[9px] font-semibold ${docTahapFilter === tab.key ? "opacity-80" : "opacity-60"}`}>{tab.sub}</span>}
+                        </span>
+                        <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                          docTahapFilter === tab.key ? "bg-white/20 text-white" : "bg-surface-variant/40 text-on-surface-variant"
+                        }`}>{tab.count}</span>
                       </button>
                     ))}
                   </div>
 
-                  {/* View Mode Toggle: Grouped vs Flat */}
-                  <div className="flex gap-1 bg-surface-container-high p-1 rounded-xl border border-surface-variant/20">
-                    <button
-                      type="button"
-                      onClick={() => setDocViewMode("grouped")}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${docViewMode === "grouped"
-                        ? "bg-primary text-on-primary shadow-sm"
-                        : "text-on-surface-variant hover:bg-surface-variant/20"
+                  {/* Category quick-filter pills */}
+                  {docTahapFilter !== "semua" && (
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      <button
+                        onClick={() => setDocCategoryFilter("Semua")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                          docCategoryFilter === "Semua"
+                            ? "bg-primary/10 border-primary/30 text-primary"
+                            : "bg-surface-container border-surface-variant/20 text-on-surface-variant hover:border-surface-variant/50"
                         }`}
-                      title="Tampilkan 1 baris per mahasiswa dan buka semua unggahannya"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">group</span>
-                      <span>Per Mahasiswa</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setDocViewMode("flat")}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${docViewMode === "flat"
-                        ? "bg-primary text-on-primary shadow-sm"
-                        : "text-on-surface-variant hover:bg-surface-variant/20"
-                        }`}
-                      title="Tampilkan daftar seluruh berkas secara rinci"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">view_list</span>
-                      <span>Semua Berkas</span>
-                    </button>
-                  </div>
+                      >
+                        Semua Kategori
+                      </button>
+                      {KIPK_TAHAP_CATEGORIES[docTahapFilter as 1 | 2 | 3].map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setDocCategoryFilter(cat)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                            docCategoryFilter === cat
+                              ? "bg-primary/10 border-primary/30 text-primary"
+                              : "bg-surface-container border-surface-variant/20 text-on-surface-variant hover:border-surface-variant/50"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
+
+              {/* Search + Status + View Mode row */}
+                <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center">
+                  <div className="relative flex-1">
+                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">
+                      search
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="Cari nama mahasiswa, NIM, judul berkas, atau nama file..."
+                      value={docSearchQuery}
+                      onChange={(e) => setDocSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 bg-surface-container border border-surface-variant/20 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-xs font-semibold text-on-surface"
+                    />
+                    {docSearchQuery && (
+                      <button
+                        onClick={() => setDocSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">close</span>
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {docTahapFilter === "semua" && (
+                      <select
+                        value={docCategoryFilter}
+                        onChange={(e) => setDocCategoryFilter(e.target.value)}
+                        className="px-3 py-2.5 bg-surface-container border border-surface-variant/20 rounded-xl text-xs font-bold text-on-surface outline-none cursor-pointer"
+                      >
+                        <option value="Semua">Semua Kategori</option>
+                        <option value="Kartu KIP-K">Kartu KIP-K</option>
+                        <option value="SKTM">SKTM</option>
+                        <option value="Keaktifan Ormawa">Keaktifan Ormawa</option>
+                        <option value="Kegiatan Webinar Soft Skill">Webinar Soft Skill</option>
+                        <option value="Keikutsertaan Kompetisi">Keikutsertaan Kompetisi</option>
+                        <option value="Kegiatan Semadiksi">Kegiatan Semadiksi</option>
+                        <option value="KHS / Transkrip">KHS / Transkrip</option>
+                        <option value="Dokumen Tambahan">Dokumen Tambahan</option>
+                      </select>
+                    )}
+
+                    <div className="flex gap-1 bg-surface-container p-1 rounded-xl text-xs font-bold">
+                      {(["Semua", "Menunggu Review", "Disetujui", "Perlu Perbaikan"] as const).map((st) => (
+                        <button
+                          key={st}
+                          onClick={() => setDocStatusFilter(st)}
+                          className={`px-2.5 py-1.5 rounded-lg transition-all cursor-pointer text-[11px] ${docStatusFilter === st
+                            ? "bg-primary text-white shadow-sm font-bold"
+                            : "text-on-surface-variant hover:bg-surface-variant/20"
+                            }`}
+                        >
+                          {st === "Menunggu Review" ? "Pending" : st}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-1 bg-surface-container-high p-1 rounded-xl border border-surface-variant/20">
+                      <button
+                        type="button"
+                        onClick={() => setDocViewMode("grouped")}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${docViewMode === "grouped"
+                          ? "bg-primary text-on-primary shadow-sm"
+                          : "text-on-surface-variant hover:bg-surface-variant/20"
+                          }`}
+                        title="Tampilkan 1 baris per mahasiswa"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">group</span>
+                        <span>Per Mahasiswa</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDocViewMode("flat")}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${docViewMode === "flat"
+                          ? "bg-primary text-on-primary shadow-sm"
+                          : "text-on-surface-variant hover:bg-surface-variant/20"
+                          }`}
+                        title="Tampilkan daftar seluruh berkas secara rinci"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">view_list</span>
+                        <span>Semua Berkas</span>
+                      </button>
+                    </div>
+                  </div>
+                 </div>
 
               {/* Table of Documents / Students */}
               <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
                 {(() => {
                   const filteredDocs = kipkDocs.filter((doc) => {
+                    // Tahap filter
+                    const docTahap = doc.tahap || getTahapForCategory(doc.category);
+                    if (typeof docTahapFilter === "number" && docTahap !== docTahapFilter) {
+                      return false;
+                    }
+
                     // Category filter
                     if (docCategoryFilter !== "Semua" && doc.category !== docCategoryFilter) {
                       return false;
@@ -5460,10 +6128,15 @@ export default function AdminDashboard() {
                                                 <tr key={doc.id} className="hover:bg-white transition-colors">
                                                   <td className="py-2.5 font-bold text-outline">{dIdx + 1}</td>
                                                   <td className="py-2.5">
-                                                    <div className="space-y-0.5">
-                                                      <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold border ${categoryColorMap[doc.category] || "bg-surface-container"}`}>
-                                                        {doc.category}
-                                                      </span>
+                                                    <div className="space-y-1">
+                                                      <div className="flex flex-wrap items-center gap-1">
+                                                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] border ${getTahapBadgeInfo(doc.category).badgeClass}`}>
+                                                          <span>{getTahapBadgeInfo(doc.category).badgeText}</span>
+                                                        </span>
+                                                        <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-bold border ${categoryColorMap[doc.category] || "bg-surface-container"}`}>
+                                                          {doc.category}
+                                                        </span>
+                                                      </div>
                                                       <p className="font-semibold text-on-surface">{doc.title}</p>
                                                     </div>
                                                   </td>
@@ -5584,6 +6257,10 @@ export default function AdminDashboard() {
                               <td className="p-4">
                                 <div className="space-y-1">
                                   <div className="flex flex-wrap items-center gap-1.5">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] border shadow-2xs ${getTahapBadgeInfo(doc.category).badgeClass}`}>
+                                      <span className={`w-1.5 h-1.5 rounded-full ${getTahapBadgeInfo(doc.category).dotClass}`}></span>
+                                      <span>{getTahapBadgeInfo(doc.category).badgeText}</span>
+                                    </span>
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${categoryColorMap[doc.category] || "bg-surface-container text-on-surface"}`}>
                                       {doc.category}
                                     </span>
@@ -8690,6 +9367,15 @@ export default function AdminDashboard() {
               const revisionCount = studentDocs.filter(d => d.status === "Perlu Perbaikan").length;
               const avgScore = studentDocs.length > 0 ? Math.round(studentDocs.reduce((a, b) => a + (b.score || 0), 0) / studentDocs.length) : 0;
 
+              const tahap1Docs = studentDocs.filter(d => getTahapForCategory(d.category) === 1);
+              const tahap2Docs = studentDocs.filter(d => getTahapForCategory(d.category) === 2);
+              const tahap3Docs = studentDocs.filter(d => getTahapForCategory(d.category) === 3);
+
+              const displayedStudentDocs = studentDocs.filter(d => {
+                if (studentDocsTahapFilter === "all") return true;
+                return getTahapForCategory(d.category) === studentDocsTahapFilter;
+              });
+
               const categoryColorMap: { [key: string]: string } = {
                 "Kartu KIP-K": "bg-indigo-500/10 text-indigo-700 border-indigo-200",
                 "SKTM": "bg-amber-500/10 text-amber-700 border-amber-200",
@@ -8779,6 +9465,94 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* FILTER & PEMBAGIAN TAHAPAN BERKAS KIP-K (ADMIN DAPAT MELIHAT PER TAHAP 1, 2, 3) */}
+                  <div className="bg-surface-container-low border border-surface-variant/30 rounded-2xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+                      <span className="text-[11px] font-extrabold text-outline uppercase tracking-wider mr-1 hidden lg:inline">
+                        Pilih Tahap:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setStudentDocsTahapFilter("all")}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          studentDocsTahapFilter === "all"
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "bg-surface text-on-surface-variant hover:bg-surface-container border border-surface-variant/20"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">inventory_2</span>
+                        <span>Semua Berkas</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                          studentDocsTahapFilter === "all" ? "bg-white/20 text-white" : "bg-surface-container text-on-surface"
+                        }`}>
+                          {studentDocs.length}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStudentDocsTahapFilter(1)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          studentDocsTahapFilter === 1
+                            ? "bg-purple-800 text-white shadow-xs"
+                            : "bg-purple-50 text-purple-900 hover:bg-purple-100 border border-purple-200"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">payments</span>
+                        <span>Tahap 1: Pencairan</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                          studentDocsTahapFilter === 1 ? "bg-white/20 text-white" : "bg-purple-200 text-purple-900"
+                        }`}>
+                          {tahap1Docs.length}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStudentDocsTahapFilter(2)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          studentDocsTahapFilter === 2
+                            ? "bg-emerald-800 text-white shadow-xs"
+                            : "bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-200"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">description</span>
+                        <span>Tahap 2: Keaktifan</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                          studentDocsTahapFilter === 2 ? "bg-white/20 text-white" : "bg-emerald-200 text-emerald-900"
+                        }`}>
+                          {tahap2Docs.length}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setStudentDocsTahapFilter(3)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          studentDocsTahapFilter === 3
+                            ? "bg-blue-800 text-white shadow-xs"
+                            : "bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-200"
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">analytics</span>
+                        <span>Tahap 3: Monev</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                          studentDocsTahapFilter === 3 ? "bg-white/20 text-white" : "bg-blue-200 text-blue-900"
+                        }`}>
+                          {tahap3Docs.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    <span className="text-[11px] text-on-surface-variant font-semibold">
+                      {studentDocsTahapFilter === "all" ? (
+                        `Total: ${studentDocs.length} berkas`
+                      ) : (
+                        `Menampilkan ${displayedStudentDocs.length} berkas Tahap ${studentDocsTahapFilter}`
+                      )}
+                    </span>
+                  </div>
+
                   {/* Documents List Table */}
                   <div className="bg-surface-container-lowest border border-surface-variant/30 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
                     <table className="w-full text-left border-collapse">
@@ -8795,99 +9569,116 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-surface-variant/20 text-xs">
-                        {studentDocs.length > 0 ? (
-                          studentDocs.map((doc, idx) => (
-                            <tr key={doc.id} className="hover:bg-surface-container-low/40 transition-colors">
-                              <td className="p-3.5 text-center font-bold text-outline">{idx + 1}</td>
-                              <td className="p-3.5">
-                                <div className="space-y-1">
-                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${categoryColorMap[doc.category] || "bg-surface-container"}`}>
-                                    {doc.category}
-                                  </span>
-                                  <p className="font-bold text-on-surface text-xs">{doc.title}</p>
-                                </div>
-                              </td>
-                              <td className="p-3.5">
-                                <button
-                                  type="button"
-                                  onClick={() => openDocValidationModal(doc)}
-                                  className="flex items-center gap-1.5 p-1.5 bg-surface hover:bg-surface-container rounded-xl border border-surface-variant/20 text-left transition-all cursor-pointer group max-w-[200px]"
-                                  title="Buka pratinjau dokumen resmi"
-                                >
-                                  <span className={`material-symbols-outlined text-[18px] shrink-0 ${doc.fileType === "image" ? "text-amber-600" : "text-primary"}`}>
-                                    {doc.fileType === "image" ? "image" : "picture_as_pdf"}
-                                  </span>
-                                  <div className="min-w-0">
-                                    <p className="text-[11px] font-bold text-primary truncate group-hover:underline">{doc.fileName}</p>
-                                    <p className="text-[9px] text-outline">{doc.fileSize || "1.5 MB"}</p>
+                        {displayedStudentDocs.length > 0 ? (
+                          displayedStudentDocs.map((doc, idx) => {
+                            const tInfo = getTahapBadgeInfo(doc.category);
+                            return (
+                              <tr key={doc.id} className="hover:bg-surface-container-low/40 transition-colors">
+                                <td className="p-3.5 text-center font-bold text-outline">{idx + 1}</td>
+                                <td className="p-3.5">
+                                  <div className="space-y-1.5">
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      {/* BADGE TAHAPAN (MEMBEDAKAN TAHAP 1, 2, DAN 3) */}
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] border shadow-2xs ${tInfo.badgeClass}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${tInfo.dotClass}`}></span>
+                                        <span>{tInfo.fullText}</span>
+                                      </span>
+
+                                      {/* BADGE KATEGORI */}
+                                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${categoryColorMap[doc.category] || "bg-surface-container"}`}>
+                                        {doc.category}
+                                      </span>
+                                    </div>
+                                    <p className="font-bold text-on-surface text-xs">{doc.title}</p>
                                   </div>
-                                </button>
-                              </td>
-                              <td className="p-3.5 text-[11px] text-on-surface-variant font-medium">{doc.uploadedAt}</td>
-                              <td className="p-3.5 text-center">
-                                <span className={`font-black text-sm ${doc.status === "Disetujui" ? "text-primary" : doc.status === "Perlu Perbaikan" ? "text-error" : "text-amber-600"}`}>
-                                  {doc.score}%
-                                </span>
-                              </td>
-                              <td className="p-3.5 text-center">
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${doc.status === "Disetujui"
-                                  ? "bg-primary/10 border-primary/20 text-primary"
-                                  : doc.status === "Perlu Perbaikan"
-                                    ? "bg-error/10 border-error/20 text-error"
-                                    : "bg-amber-500/10 border-amber-500/20 text-amber-700"
-                                  }`}>
-                                  <span className="material-symbols-outlined text-[12px]">
-                                    {doc.status === "Disetujui" ? "check_circle" : doc.status === "Perlu Perbaikan" ? "cancel" : "schedule"}
-                                  </span>
-                                  <span>{doc.status}</span>
-                                </span>
-                              </td>
-                              <td className="p-3.5 text-[11px] text-on-surface-variant max-w-[180px]">
-                                {doc.notes ? (
-                                  <span className="line-clamp-2" title={doc.notes}>{doc.notes}</span>
-                                ) : (
-                                  <span className="text-outline italic">Belum ada catatan</span>
-                                )}
-                              </td>
-                              <td className="p-3.5 text-center">
-                                <div className="flex items-center justify-center gap-1">
+                                </td>
+                                <td className="p-3.5">
                                   <button
                                     type="button"
                                     onClick={() => openDocValidationModal(doc)}
-                                    className="px-2.5 py-1.5 bg-primary text-on-primary rounded-lg text-[10px] font-bold hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
-                                    title="Validasi & Pratinjau Dokumen"
+                                    className="flex items-center gap-1.5 p-1.5 bg-surface hover:bg-surface-container rounded-xl border border-surface-variant/20 text-left transition-all cursor-pointer group max-w-[200px]"
+                                    title="Buka pratinjau dokumen resmi"
                                   >
-                                    <span className="material-symbols-outlined text-[13px]">rate_review</span>
-                                    <span>Validasi</span>
+                                    <span className={`material-symbols-outlined text-[18px] shrink-0 ${doc.fileType === "image" ? "text-amber-600" : "text-primary"}`}>
+                                      {doc.fileType === "image" ? "image" : "picture_as_pdf"}
+                                    </span>
+                                    <div className="min-w-0">
+                                      <p className="text-[11px] font-bold text-primary truncate group-hover:underline">{doc.fileName}</p>
+                                      <p className="text-[9px] text-outline">{doc.fileSize || "1.5 MB"}</p>
+                                    </div>
                                   </button>
-
-                                  {doc.status !== "Disetujui" && (
+                                </td>
+                                <td className="p-3.5 text-[11px] text-on-surface-variant font-medium">{doc.uploadedAt}</td>
+                                <td className="p-3.5 text-center">
+                                  <span className={`font-black text-sm ${doc.status === "Disetujui" ? "text-primary" : doc.status === "Perlu Perbaikan" ? "text-error" : "text-amber-600"}`}>
+                                    {doc.score}%
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${doc.status === "Disetujui"
+                                    ? "bg-primary/10 border-primary/20 text-primary"
+                                    : doc.status === "Perlu Perbaikan"
+                                      ? "bg-error/10 border-error/20 text-error"
+                                      : "bg-amber-500/10 border-amber-500/20 text-amber-700"
+                                    }`}>
+                                    <span className="material-symbols-outlined text-[12px]">
+                                      {doc.status === "Disetujui" ? "check_circle" : doc.status === "Perlu Perbaikan" ? "cancel" : "schedule"}
+                                    </span>
+                                    <span>{doc.status}</span>
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-[11px] text-on-surface-variant max-w-[180px]">
+                                  {doc.notes ? (
+                                    <span className="line-clamp-2" title={doc.notes}>{doc.notes}</span>
+                                  ) : (
+                                    <span className="text-outline italic">Belum ada catatan</span>
+                                  )}
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  <div className="flex items-center justify-center gap-1">
                                     <button
                                       type="button"
-                                      onClick={() => quickApproveDoc(doc.id, doc.title, doc.userName)}
-                                      className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
-                                      title="Setujui Berkas"
+                                      onClick={() => openDocValidationModal(doc)}
+                                      className="px-2.5 py-1.5 bg-primary text-on-primary rounded-lg text-[10px] font-bold hover:brightness-110 active:scale-95 transition-all cursor-pointer flex items-center gap-1 shadow-xs"
+                                      title="Validasi & Pratinjau Dokumen"
                                     >
-                                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                      <span className="material-symbols-outlined text-[13px]">rate_review</span>
+                                      <span>Validasi</span>
                                     </button>
-                                  )}
 
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteDoc(doc.id, doc.title)}
-                                    className="p-1.5 text-error hover:bg-error-container/20 rounded-lg transition-colors cursor-pointer"
-                                    title="Hapus Berkas"
-                                  >
-                                    <span className="material-symbols-outlined text-[16px]">delete</span>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
+                                    {doc.status !== "Disetujui" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => quickApproveDoc(doc.id, doc.title, doc.userName)}
+                                        className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                                        title="Setujui Berkas"
+                                      >
+                                        <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteDoc(doc.id, doc.title)}
+                                      className="p-1.5 text-error hover:bg-error-container/20 rounded-lg transition-colors cursor-pointer"
+                                      title="Hapus Berkas"
+                                    >
+                                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
                         ) : (
                           <tr>
-                            <td colSpan={8} className="text-center py-10 text-outline italic">
-                              Belum ada berkas yang diunggah oleh mahasiswa ini.
+                            <td colSpan={8} className="text-center py-12 text-outline">
+                              <span className="material-symbols-outlined text-4xl mb-1 block">folder_off</span>
+                              <p className="font-bold text-xs">
+                                {studentDocsTahapFilter === "all"
+                                  ? "Belum ada berkas yang diunggah oleh mahasiswa ini."
+                                  : `Tidak ada berkas yang diunggah pada Tahap ${studentDocsTahapFilter}.`}
+                              </p>
                             </td>
                           </tr>
                         )}
@@ -8940,7 +9731,11 @@ export default function AdminDashboard() {
               {/* Left Column: Document Canvas Simulator (7 cols) */}
               <div className="lg:col-span-7 space-y-3">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs border shadow-2xs ${getTahapBadgeInfo(selectedDocForValidation.category).badgeClass}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${getTahapBadgeInfo(selectedDocForValidation.category).dotClass}`}></span>
+                      <span>{getTahapBadgeInfo(selectedDocForValidation.category).fullText}</span>
+                    </span>
                     <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-primary/20">
                       {selectedDocForValidation.category}
                     </span>
@@ -9297,14 +10092,20 @@ export default function AdminDashboard() {
                   className="w-full p-3 bg-surface-container border border-surface-variant/20 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 text-xs font-bold text-on-surface cursor-pointer"
                   required
                 >
-                  <option value="Keaktifan Ormawa">Keaktifan Ormawa (SK / Surat Tanda Aktif)</option>
-                  <option value="Kegiatan Webinar Soft Skill">Kegiatan Webinar Soft Skill</option>
-                  <option value="Keikutsertaan Kompetisi">Keikutsertaan Kompetisi (Sertifikat Juara/Peserta)</option>
-                  <option value="Kegiatan Semadiksi">Kegiatan Semadiksi KIP-K</option>
-                  <option value="Kartu KIP-K">Kartu Resmi KIP Kuliah</option>
-                  <option value="SKTM">SKTM (Surat Keterangan Tidak Mampu)</option>
-                  <option value="KHS / Transkrip">KHS / Transkrip Nilai Akademik</option>
-                  <option value="Dokumen Tambahan">Dokumen Tambahan / Khusus</option>
+                  <optgroup label="Tahap 1: Pengajuan Pencairan">
+                    <option value="Kartu KIP-K">Kartu KIP-K (Kartu Resmi)</option>
+                    <option value="SKTM">SKTM (Surat Keterangan Tidak Mampu)</option>
+                  </optgroup>
+                  <optgroup label="Tahap 2: Pelaporan Keaktifan">
+                    <option value="Keaktifan Ormawa">Keaktifan Ormawa (SK / Surat Tanda Aktif)</option>
+                    <option value="Kegiatan Webinar Soft Skill">Kegiatan Webinar Soft Skill</option>
+                    <option value="Keikutsertaan Kompetisi">Keikutsertaan Kompetisi (Sertifikat)</option>
+                    <option value="Kegiatan Semadiksi">Kegiatan Semadiksi KIP-K</option>
+                  </optgroup>
+                  <optgroup label="Tahap 3: Monev Akademik">
+                    <option value="KHS / Transkrip">KHS / Transkrip Nilai Akademik</option>
+                    <option value="Dokumen Tambahan">Dokumen Tambahan / Khusus</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -10450,84 +11251,105 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
-              <div className="bg-surface border-t-8 border-t-purple-800 p-5 rounded-2xl shadow-xs space-y-2">
-                <h3 className="text-lg font-black text-on-surface">
-                  {formBuilderActiveForm === "pencairan"
-                    ? "Formulir Pengajuan Pencairan Beasiswa KIP-K UNUSA"
-                    : formBuilderActiveForm === "pelaporan"
-                      ? "Formulir Pelaporan Keaktifan & Lomba KIP-K UNUSA"
-                      : "Formulir Monev Akademik & Kondisi Terkini Mahasiswa KIP-K"}
-                </h3>
-                <p className="text-xs text-on-surface-variant">Pratinjau simulasi respon pengisian mahasiswa.</p>
-              </div>
+            <div className="space-y-6 text-xs">
+              {getActiveFormSections().map((sec, secIdx) => {
+                const sections = getActiveFormSections();
+                const allQuestions = getActiveFormQuestions();
+                const sectionQuestions = allQuestions.filter(q => {
+                  if (!q.sectionId && secIdx === 0) return true;
+                  return q.sectionId === sec.id;
+                });
 
-              {getActiveFormQuestions().map((q, idx) => (
-                <div key={q.id} className="bg-surface p-5 rounded-2xl border border-surface-variant/30 space-y-2 shadow-xs">
-                  <label className="font-bold text-on-surface text-xs block">
-                    {idx + 1}. {q.title} {q.required && <span className="text-red-500">*</span>}
-                  </label>
+                return (
+                  <div key={sec.id} className="space-y-3">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-700 text-white rounded-t-lg text-[11px] font-bold">
+                      <span className="material-symbols-outlined text-[14px]">view_agenda</span>
+                      <span>Bagian {secIdx + 1} dari {sections.length}</span>
+                    </div>
 
-                  {q.type === "Jawaban singkat" && (
-                    <input
-                      type="text"
-                      disabled
-                      placeholder={q.placeholder || "Jawaban Anda..."}
-                      className="w-full px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs"
-                    />
-                  )}
+                    <div className="bg-surface border-t-4 border-t-purple-800 p-5 rounded-b-xl rounded-tr-xl border-x border-b border-surface-variant/30 shadow-xs space-y-2">
+                      <h4 className="text-base font-black text-on-surface">{sec.title}</h4>
+                      {sec.description && (
+                        <p className="text-xs text-on-surface-variant">{sec.description}</p>
+                      )}
+                    </div>
 
-                  {q.type === "Paragraf" && (
-                    <textarea
-                      disabled
-                      rows={2}
-                      placeholder="Jawaban panjang Anda..."
-                      className="w-full px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs"
-                    />
-                  )}
-
-                  {q.type === "Pilihan ganda" && (
-                    <div className="space-y-1.5 pt-1">
-                      {q.options?.map((opt, oIdx) => (
-                        <label key={oIdx} className="flex items-center gap-2 text-xs font-semibold text-on-surface">
-                          <input type="radio" disabled className="accent-purple-800" />
-                          <span>{opt}</span>
+                    {sectionQuestions.map((q, idx) => (
+                      <div key={q.id} className="bg-surface p-4 rounded-xl border border-surface-variant/30 space-y-2 shadow-xs">
+                        <label className="font-bold text-on-surface text-xs block">
+                          {idx + 1}. {q.title} {q.required && <span className="text-red-500">*</span>}
                         </label>
-                      ))}
-                    </div>
-                  )}
 
-                  {q.type === "Kotak Centang" && (
-                    <div className="space-y-1.5 pt-1">
-                      {q.options?.map((opt, oIdx) => (
-                        <label key={oIdx} className="flex items-center gap-2 text-xs font-semibold text-on-surface">
-                          <input type="checkbox" disabled className="accent-purple-800" />
-                          <span>{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
+                        {q.type === "Jawaban singkat" && (
+                          <input
+                            type="text"
+                            disabled
+                            placeholder={q.placeholder || "Jawaban Anda..."}
+                            className="w-full px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs"
+                          />
+                        )}
 
-                  {q.type === "Drop-down" && (
-                    <select disabled className="w-full px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs font-bold text-purple-900">
-                      {q.options?.map((opt, oIdx) => (
-                        <option key={oIdx}>{opt}</option>
-                      ))}
-                    </select>
-                  )}
+                        {q.type === "Paragraf" && (
+                          <textarea
+                            disabled
+                            rows={2}
+                            placeholder="Jawaban panjang Anda..."
+                            className="w-full px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs"
+                          />
+                        )}
 
-                  {q.type === "Upload file" && (
-                    <div className="p-3 bg-surface-container-low border border-dashed border-purple-300 rounded-xl text-center space-y-1">
-                      <span className="material-symbols-outlined text-purple-700 text-xl">cloud_upload</span>
-                      <p className="text-xs font-bold text-on-surface">Unggah Berkas File (PDF / Gambar) atau Tautan Drive</p>
-                    </div>
-                  )}
+                        {q.type === "Pilihan ganda" && (
+                          <div className="space-y-1.5 pt-1">
+                            {q.options?.map((opt, oIdx) => (
+                              <label key={oIdx} className="flex items-center justify-between text-xs font-semibold text-on-surface p-1 rounded-md hover:bg-surface-container-low">
+                                <span className="flex items-center gap-2">
+                                  <input type="radio" disabled className="accent-purple-800" />
+                                  <span>{opt}</span>
+                                </span>
+                                {q.optionBranches?.[oIdx] && q.optionBranches[oIdx] !== "next" && (
+                                  <span className="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-mono">
+                                    ➜ {q.optionBranches[oIdx] === "submit" ? "Kirim" : "Buka Bagian"}
+                                  </span>
+                                )}
+                              </label>
+                            ))}
+                          </div>
+                        )}
 
-                  {q.type === "Tanggal" && (
-                    <input type="date" disabled className="px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs" />
-                  )}
-                </div>
-              ))}
+                        {q.type === "Kotak Centang" && (
+                          <div className="space-y-1.5 pt-1">
+                            {q.options?.map((opt, oIdx) => (
+                              <label key={oIdx} className="flex items-center gap-2 text-xs font-semibold text-on-surface">
+                                <input type="checkbox" disabled className="accent-purple-800" />
+                                <span>{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        {q.type === "Drop-down" && (
+                          <select disabled className="w-full px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs font-bold text-purple-900">
+                            {q.options?.map((opt, oIdx) => (
+                              <option key={oIdx}>{opt}</option>
+                            ))}
+                          </select>
+                        )}
+
+                        {q.type === "Upload file" && (
+                          <div className="p-3 bg-surface-container-low border border-dashed border-purple-300 rounded-xl text-center space-y-1">
+                            <span className="material-symbols-outlined text-purple-700 text-xl">cloud_upload</span>
+                            <p className="text-xs font-bold text-on-surface">Unggah Berkas File (PDF / Gambar) atau Tautan Drive</p>
+                          </div>
+                        )}
+
+                        {q.type === "Tanggal" && (
+                          <input type="date" disabled className="px-3.5 py-2 bg-surface-container-low border border-surface-variant/30 rounded-xl text-xs" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="flex justify-end pt-2">

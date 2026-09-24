@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { KipkDocument, INITIAL_KIPK_DOCUMENTS } from "@/data/portalData";
+import { 
+  KipkDocument, 
+  INITIAL_KIPK_DOCUMENTS, 
+  KIPK_TAHAP_CATEGORIES, 
+  KIPK_TAHAP_LABELS, 
+  getTahapForCategory 
+} from "@/data/portalData";
 
 export default function BerkasKipkPage() {
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -13,6 +19,9 @@ export default function BerkasKipkPage() {
     "Keikutsertaan Kompetisi": 25,
     "Kegiatan Semadiksi": 25
   });
+
+  // Active Tahap Tab: 1 | 2 | 3 | "all"
+  const [activeTahap, setActiveTahap] = useState<1 | 2 | 3 | "all">(1);
 
   // Display Mode: "categorized" | "table"
   const [viewMode, setViewMode] = useState<"categorized" | "table">("categorized");
@@ -155,6 +164,7 @@ export default function BerkasKipkPage() {
       userNim: currentUser?.nim || "3230023034",
       userUniversity: currentUser?.university || "Universitas Nahdlatul Ulama Surabaya",
       category: formCategory,
+      tahap: getTahapForCategory(formCategory),
       title: formTitle.trim(),
       fileName: fileName,
       fileSize: fileSize,
@@ -211,9 +221,10 @@ export default function BerkasKipkPage() {
     }
   };
 
-  // Main Categories array matching Admin configuration screenshot
-  const adminCategories: {
+  // All categories for all tahap with display metadata
+  const allCategoriesConfig: {
     key: KipkDocument["category"];
+    tahap: 1 | 2 | 3;
     title: string;
     icon: string;
     color: string;
@@ -222,8 +233,33 @@ export default function BerkasKipkPage() {
     weightKey: string;
     desc: string;
   }[] = [
+    // ── TAHAP 1: Pencairan ──
+    {
+      key: "Kartu KIP-K",
+      tahap: 1,
+      title: "Kartu KIP-K (Resmi Kemdikbudristek)",
+      icon: "badge",
+      color: "text-purple-800",
+      bgHeader: "bg-purple-50 border-purple-200",
+      border: "border-purple-500/30",
+      weightKey: "",
+      desc: "Unggah Kartu KIP Kuliah resmi yang diterbitkan Kemdikbudristek sebagai bukti penerima beasiswa."
+    },
+    {
+      key: "SKTM",
+      tahap: 1,
+      title: "Surat Keterangan Tidak Mampu (SKTM)",
+      icon: "description",
+      color: "text-fuchsia-800",
+      bgHeader: "bg-fuchsia-50 border-fuchsia-200",
+      border: "border-fuchsia-500/30",
+      weightKey: "",
+      desc: "Unggah SKTM dari Kelurahan/Desa setempat yang menyatakan kondisi ekonomi keluarga tidak mampu."
+    },
+    // ── TAHAP 2: Pelaporan ──
     {
       key: "Keaktifan Ormawa",
+      tahap: 2,
       title: "Kategori Keaktifan Ormawa",
       icon: "groups",
       color: "text-emerald-800",
@@ -234,6 +270,7 @@ export default function BerkasKipkPage() {
     },
     {
       key: "Kegiatan Webinar Soft Skill",
+      tahap: 2,
       title: "Kategori Kegiatan Webinar Soft Skill",
       icon: "video_camera_front",
       color: "text-amber-800",
@@ -244,6 +281,7 @@ export default function BerkasKipkPage() {
     },
     {
       key: "Keikutsertaan Kompetisi",
+      tahap: 2,
       title: "Kategori Keikutsertaan Kompetisi",
       icon: "emoji_events",
       color: "text-amber-900",
@@ -254,6 +292,7 @@ export default function BerkasKipkPage() {
     },
     {
       key: "Kegiatan Semadiksi",
+      tahap: 2,
       title: "Kategori Kegiatan Semadiksi",
       icon: "school",
       color: "text-red-800",
@@ -261,8 +300,38 @@ export default function BerkasKipkPage() {
       border: "border-red-500/30",
       weightKey: "Kegiatan Semadiksi",
       desc: "Unggah sertifikat keikutsertaan LKMB, Raker, Bakti Sosial, & Temu Akbar wajib penerima KIP-K UNUSA."
-    }
+    },
+    // ── TAHAP 3: Monev ──
+    {
+      key: "KHS / Transkrip",
+      tahap: 3,
+      title: "KHS / Transkrip Nilai Akademik",
+      icon: "menu_book",
+      color: "text-blue-800",
+      bgHeader: "bg-blue-50 border-blue-200",
+      border: "border-blue-500/30",
+      weightKey: "",
+      desc: "Unggah Kartu Hasil Studi (KHS) atau transkrip nilai akademik resmi dari SIAKAD/Fakultas semester terkini."
+    },
+    {
+      key: "Dokumen Tambahan",
+      tahap: 3,
+      title: "Berkas Penunjang Ekonomi & Dokumen Tambahan",
+      icon: "folder_special",
+      color: "text-cyan-800",
+      bgHeader: "bg-cyan-50 border-cyan-200",
+      border: "border-cyan-500/30",
+      weightKey: "",
+      desc: "Unggah slip gaji orang tua/wali, bukti DTKS/DTSEN, atau berkas penunjang kondisi ekonomi lainnya."
+    },
   ];
+
+  // Filter kategori berdasarkan activeTahap (jika "all", tampilkan semua)
+  const displayedCategories = activeTahap === "all"
+    ? allCategoriesConfig
+    : allCategoriesConfig.filter((c) => c.tahap === activeTahap);
+
+  const adminCategories = displayedCategories;
 
   if (currentUser && currentUser.kipStatus !== "KIP UNUSA") {
     return (
@@ -328,7 +397,10 @@ export default function BerkasKipkPage() {
 
           <button
             onClick={() => {
-              setFormCategory("Keaktifan Ormawa");
+              if (activeTahap === 1) setFormCategory("Kartu KIP-K");
+              else if (activeTahap === 2) setFormCategory("Keaktifan Ormawa");
+              else if (activeTahap === 3) setFormCategory("KHS / Transkrip");
+              else setFormCategory("Kartu KIP-K");
               setShowUploadModal(true);
             }}
             className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-full text-xs shadow-lg transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
@@ -338,6 +410,8 @@ export default function BerkasKipkPage() {
           </button>
         </div>
       </div>
+
+
 
       {/* BOBOT PERSENTASE KEGIATAN & SCORE SUMMARY (MATCHING USER SCREENSHOT 2) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -446,38 +520,235 @@ export default function BerkasKipkPage() {
         </div>
       </div>
 
-      {/* VIEW MODE TOGGLE BAR */}
-      <div className="bg-surface border border-surface-variant/30 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-emerald-700">grid_view</span>
-          <h2 className="font-bold text-on-surface text-sm">Mode Tampilan Berkas KIP-K</h2>
+      {/* ── TABS TAHAPAN KIP-K MAHASISWA ── */}
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface border border-surface-variant/30 rounded-3xl p-5 shadow-xs">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-emerald-700">filter_alt</span>
+              <h2 className="font-extrabold text-on-surface text-base">Alur & Tahapan Berkas KIP-K</h2>
+            </div>
+            <p className="text-xs text-on-surface-variant mt-0.5">
+              Pilih tahapan untuk mengunggah atau melihat berkas. Anda bebas berpindah antar tahap kapan saja.
+            </p>
+          </div>
+
+          {/* Sub View Toggle: Per Kategori vs Tabel */}
+          <div className="flex items-center gap-1.5 self-start md:self-auto bg-surface-container-low p-1.5 rounded-2xl border border-surface-variant/30">
+            <button
+              onClick={() => setViewMode("categorized")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === "categorized"
+                  ? "bg-emerald-700 text-white shadow-xs"
+                  : "text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">grid_view</span>
+              <span>Per Kategori</span>
+            </button>
+            <button
+              onClick={() => setViewMode("table")}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-emerald-700 text-white shadow-xs"
+                  : "text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">table_chart</span>
+              <span>Daftar Tabel</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex gap-2">
+        {/* 4 Cards Selector Tahapan */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Tahap 1 Card */}
           <button
-            onClick={() => setViewMode("categorized")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              viewMode === "categorized"
-                ? "bg-emerald-700 text-white shadow-sm"
-                : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+            type="button"
+            onClick={() => {
+              setActiveTahap(1);
+              setCategoryFilter("Semua");
+            }}
+            className={`p-4 rounded-3xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+              activeTahap === 1
+                ? "bg-purple-900 text-white border-purple-800 shadow-md ring-2 ring-purple-600/30"
+                : "bg-surface text-on-surface border-surface-variant/30 hover:border-purple-300 hover:bg-purple-50/20"
             }`}
           >
-            <span className="material-symbols-outlined text-sm">dashboard</span>
-            <span>Per Kategori Kegiatan (Admin)</span>
+            <div className="flex items-start justify-between gap-2">
+              <div className={`p-2.5 rounded-2xl ${activeTahap === 1 ? "bg-white/20 text-white" : "bg-purple-100 text-purple-800"}`}>
+                <span className="material-symbols-outlined text-2xl">payments</span>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                activeTahap === 1 ? "bg-purple-800 text-purple-100" : "bg-purple-100 text-purple-800"
+              }`}>
+                {documents.filter((d) => getTahapForCategory(d.category) === 1).length} Berkas
+              </span>
+            </div>
+            <div className="mt-3">
+              <span className={`text-[10px] font-extrabold uppercase tracking-wider block ${activeTahap === 1 ? "text-purple-200" : "text-purple-700"}`}>
+                Tahap 1
+              </span>
+              <h3 className="font-extrabold text-sm leading-snug">Pengajuan Pencairan</h3>
+              <p className={`text-[11px] mt-0.5 line-clamp-1 ${activeTahap === 1 ? "text-purple-200" : "text-on-surface-variant"}`}>
+                Kartu KIP-K & SKTM
+              </p>
+            </div>
           </button>
 
+          {/* Tahap 2 Card */}
           <button
-            onClick={() => setViewMode("table")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              viewMode === "table"
-                ? "bg-emerald-700 text-white shadow-sm"
-                : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+            type="button"
+            onClick={() => {
+              setActiveTahap(2);
+              setCategoryFilter("Semua");
+            }}
+            className={`p-4 rounded-3xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+              activeTahap === 2
+                ? "bg-emerald-900 text-white border-emerald-800 shadow-md ring-2 ring-emerald-600/30"
+                : "bg-surface text-on-surface border-surface-variant/30 hover:border-emerald-300 hover:bg-emerald-50/20"
             }`}
           >
-            <span className="material-symbols-outlined text-sm">table_chart</span>
-            <span>Semua Berkas (1 Tabel)</span>
+            <div className="flex items-start justify-between gap-2">
+              <div className={`p-2.5 rounded-2xl ${activeTahap === 2 ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"}`}>
+                <span className="material-symbols-outlined text-2xl">description</span>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                activeTahap === 2 ? "bg-emerald-800 text-emerald-100" : "bg-emerald-100 text-emerald-800"
+              }`}>
+                {documents.filter((d) => getTahapForCategory(d.category) === 2).length} Berkas
+              </span>
+            </div>
+            <div className="mt-3">
+              <span className={`text-[10px] font-extrabold uppercase tracking-wider block ${activeTahap === 2 ? "text-emerald-200" : "text-emerald-700"}`}>
+                Tahap 2
+              </span>
+              <h3 className="font-extrabold text-sm leading-snug">Pelaporan Keaktifan</h3>
+              <p className={`text-[11px] mt-0.5 line-clamp-1 ${activeTahap === 2 ? "text-emerald-200" : "text-on-surface-variant"}`}>
+                Ormawa, Webinar, Lomba & Semadiksi
+              </p>
+            </div>
+          </button>
+
+          {/* Tahap 3 Card */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTahap(3);
+              setCategoryFilter("Semua");
+            }}
+            className={`p-4 rounded-3xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+              activeTahap === 3
+                ? "bg-blue-900 text-white border-blue-800 shadow-md ring-2 ring-blue-600/30"
+                : "bg-surface text-on-surface border-surface-variant/30 hover:border-blue-300 hover:bg-blue-50/20"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className={`p-2.5 rounded-2xl ${activeTahap === 3 ? "bg-white/20 text-white" : "bg-blue-100 text-blue-800"}`}>
+                <span className="material-symbols-outlined text-2xl">analytics</span>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                activeTahap === 3 ? "bg-blue-800 text-blue-100" : "bg-blue-100 text-blue-800"
+              }`}>
+                {documents.filter((d) => getTahapForCategory(d.category) === 3).length} Berkas
+              </span>
+            </div>
+            <div className="mt-3">
+              <span className={`text-[10px] font-extrabold uppercase tracking-wider block ${activeTahap === 3 ? "text-blue-200" : "text-blue-700"}`}>
+                Tahap 3
+              </span>
+              <h3 className="font-extrabold text-sm leading-snug">Monev Akademik</h3>
+              <p className={`text-[11px] mt-0.5 line-clamp-1 ${activeTahap === 3 ? "text-blue-200" : "text-on-surface-variant"}`}>
+                KHS/Transkrip & Penunjang Ekonomi
+              </p>
+            </div>
+          </button>
+
+          {/* Tahap All Card */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTahap("all");
+              setCategoryFilter("Semua");
+            }}
+            className={`p-4 rounded-3xl border text-left transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden group ${
+              activeTahap === "all"
+                ? "bg-slate-900 text-white border-slate-800 shadow-md ring-2 ring-slate-600/30"
+                : "bg-surface text-on-surface border-surface-variant/30 hover:border-slate-300 hover:bg-slate-50/20"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className={`p-2.5 rounded-2xl ${activeTahap === "all" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-800"}`}>
+                <span className="material-symbols-outlined text-2xl">inventory_2</span>
+              </div>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                activeTahap === "all" ? "bg-slate-800 text-slate-100" : "bg-slate-100 text-slate-800"
+              }`}>
+                {documents.length} Total
+              </span>
+            </div>
+            <div className="mt-3">
+              <span className={`text-[10px] font-extrabold uppercase tracking-wider block ${activeTahap === "all" ? "text-slate-300" : "text-slate-600"}`}>
+                Semua Tahap
+              </span>
+              <h3 className="font-extrabold text-sm leading-snug">Semua Berkas</h3>
+              <p className={`text-[11px] mt-0.5 line-clamp-1 ${activeTahap === "all" ? "text-slate-300" : "text-on-surface-variant"}`}>
+                Rekapitulasi 8 Kategori Berkas
+              </p>
+            </div>
           </button>
         </div>
+
+        {/* Banner Keterangan Tahap Aktif */}
+        {activeTahap !== "all" && (
+          <div className={`p-4 md:p-5 rounded-3xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
+            activeTahap === 1 
+              ? "bg-purple-50/90 border-purple-200 text-purple-950" 
+              : activeTahap === 2 
+              ? "bg-emerald-50/90 border-emerald-200 text-emerald-950"
+              : "bg-blue-50/90 border-blue-200 text-blue-950"
+          }`}>
+            <div className="flex items-center gap-3.5">
+              <div className={`p-3 rounded-2xl shrink-0 shadow-xs border ${
+                activeTahap === 1 ? "bg-white text-purple-700 border-purple-200" : activeTahap === 2 ? "bg-white text-emerald-700 border-emerald-200" : "bg-white text-blue-700 border-blue-200"
+              }`}>
+                <span className="material-symbols-outlined text-2xl">
+                  {KIPK_TAHAP_LABELS[activeTahap].icon}
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-extrabold text-sm md:text-base">
+                    {KIPK_TAHAP_LABELS[activeTahap].title}
+                  </h4>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                    activeTahap === 1 ? "bg-purple-200/80 text-purple-900" : activeTahap === 2 ? "bg-emerald-200/80 text-emerald-900" : "bg-blue-200/80 text-blue-900"
+                  }`}>
+                    {displayedCategories.length} Kategori
+                  </span>
+                </div>
+                <p className="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+                  {KIPK_TAHAP_LABELS[activeTahap].desc}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                if (activeTahap === 1) setFormCategory("Kartu KIP-K");
+                else if (activeTahap === 2) setFormCategory("Keaktifan Ormawa");
+                else if (activeTahap === 3) setFormCategory("KHS / Transkrip");
+                setShowUploadModal(true);
+              }}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-bold text-white flex items-center gap-2 shadow-xs shrink-0 cursor-pointer active:scale-95 transition-all ${
+                activeTahap === 1 ? "bg-purple-700 hover:bg-purple-800" : activeTahap === 2 ? "bg-emerald-700 hover:bg-emerald-800" : "bg-blue-700 hover:bg-blue-800"
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">upload_file</span>
+              <span>Unggah Berkas Tahap {activeTahap}</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* MODE 1: PER KATEGORI KEGIATAN (EXACT MATCHING ADMIN CATEGORIES) */}
@@ -622,103 +893,6 @@ export default function BerkasKipkPage() {
             );
           })}
 
-          {/* KATEGORI BERKAS UTAMA KIP-K & AKADEMIK */}
-          <div className="bg-surface border border-purple-500/30 rounded-3xl p-6 shadow-sm space-y-4">
-            <div className="p-4 rounded-2xl border bg-purple-50 border-purple-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white rounded-xl shadow-xs border border-purple-200">
-                  <span className="material-symbols-outlined text-purple-800 text-2xl">badge</span>
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-sm md:text-base text-purple-950">Kategori Berkas Administrasi Utama (Kartu KIP-K, SKTM & KHS)</h3>
-                  <p className="text-xs text-purple-900 mt-0.5">Dokumen persyaratam wajib mahasiswa penerima beasiswa KIP Kuliah di UNUSA.</p>
-                </div>
-              </div>
-              <button
-                onClick={() => handleOpenUploadForCategory("Kartu KIP-K")}
-                className="px-4 py-2 bg-purple-800 hover:bg-purple-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
-              >
-                <span className="material-symbols-outlined text-sm">add_circle</span>
-                <span>Unggah Berkas Utama</span>
-              </button>
-            </div>
-
-            <div className="overflow-x-auto border border-surface-variant/20 rounded-2xl">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-surface-container-high text-on-surface-variant text-[11px] uppercase tracking-wider font-extrabold border-b border-surface-variant/20">
-                    <th className="p-3 text-center w-10">NO</th>
-                    <th className="p-3 min-w-[200px]">KATEGORI & JUDUL BERKAS</th>
-                    <th className="p-3 min-w-[220px]">LAMPIRAN FILE</th>
-                    <th className="p-3 min-w-[120px]">WAKTU UNGGAH</th>
-                    <th className="p-3 text-center w-16">NILAI</th>
-                    <th className="p-3 text-center w-28">STATUS</th>
-                    <th className="p-3 min-w-[180px]">CATATAN ADMIN</th>
-                    <th className="p-3 text-center w-28">AKSI</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-variant/20 text-xs">
-                  {documents
-                    .filter((d) => ["Kartu KIP-K", "KHS / Transkrip", "SKTM", "Dokumen Tambahan"].includes(d.category))
-                    .map((item, idx) => (
-                      <tr key={item.id} className="hover:bg-surface-container-lowest/70 transition-colors">
-                        <td className="p-3 text-center font-mono font-bold text-outline">{idx + 1}</td>
-                        <td className="p-3 font-extrabold text-on-surface space-y-1">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${getCategoryBadgeClass(item.category)}`}>
-                            {item.category}
-                          </span>
-                          <span className="block">{item.title}</span>
-                        </td>
-                        <td className="p-3">
-                          <div className="bg-surface-container-low border border-surface-variant/30 rounded-xl p-2 flex items-center gap-2 max-w-xs">
-                            <span className="material-symbols-outlined text-red-600 text-xl">picture_as_pdf</span>
-                            <div className="overflow-hidden">
-                              <button
-                                type="button"
-                                onClick={() => handleViewDocument(item)}
-                                className="font-bold text-on-surface text-[11px] block truncate underline text-left cursor-pointer"
-                              >
-                                {item.fileName}
-                              </button>
-                              <span className="text-[10px] text-outline">{item.fileSize || "1.5 MB"}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3 text-on-surface-variant font-medium text-[11px]">{item.uploadedAt}</td>
-                        <td className="p-3 text-center font-black text-on-surface text-sm">{item.score}%</td>
-                        <td className="p-3 text-center">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase border bg-emerald-500/10 border-emerald-500/30 text-emerald-800">
-                            {item.status}
-                          </span>
-                        </td>
-                        <td className="p-3 text-on-surface-variant text-[11px]">{item.notes || "-"}</td>
-                        <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleViewDocument(item)}
-                              className="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl font-bold text-[10px] flex items-center gap-1 shadow-xs transition-all active:scale-95 cursor-pointer"
-                              title={`Buka & lihat berkas ${item.fileName}`}
-                            >
-                              <span className="material-symbols-outlined text-[13px]">visibility</span>
-                              <span>Lihat Berkas</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteDocument(item.id, item.title)}
-                              className="p-1.5 text-error hover:bg-error-container/20 rounded-xl transition-colors cursor-pointer"
-                              title="Hapus Berkas"
-                            >
-                              <span className="material-symbols-outlined text-[15px]">delete</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       )}
 
@@ -737,8 +911,8 @@ export default function BerkasKipkPage() {
               />
             </div>
 
-            <div className="flex gap-2 w-full md:w-auto overflow-x-auto">
-              {["Semua", "Kartu KIP-K", "Keaktifan Ormawa", "Kegiatan Webinar Soft Skill", "Kegiatan Semadiksi", "KHS / Transkrip"].map((cat) => (
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">
+              {["Semua", ...displayedCategories.map((c) => c.key)].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
@@ -772,6 +946,7 @@ export default function BerkasKipkPage() {
                 <tbody className="divide-y divide-surface-variant/20 text-xs">
                   {documents
                     .filter((doc) => {
+                      if (activeTahap !== "all" && getTahapForCategory(doc.category) !== activeTahap) return false;
                       if (categoryFilter !== "Semua" && doc.category !== categoryFilter) return false;
                       if (searchQuery.trim() !== "") {
                         const q = searchQuery.toLowerCase();
@@ -989,14 +1164,33 @@ export default function BerkasKipkPage() {
                   onChange={(e: any) => setFormCategory(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-surface-container-low border border-surface-variant/40 rounded-xl text-xs text-on-surface font-bold text-emerald-900"
                 >
-                  <option value="Keaktifan Ormawa">Keaktifan Ormawa (SK / Surat Aktif)</option>
-                  <option value="Kegiatan Webinar Soft Skill">Kegiatan Webinar Soft Skill (Sertifikat)</option>
-                  <option value="Keikutsertaan Kompetisi">Keikutsertaan Kompetisi (Sertifikat Lomba)</option>
-                  <option value="Kegiatan Semadiksi">Kegiatan Semadiksi (LKMB / Temu Akbar)</option>
-                  <option value="Kartu KIP-K">Kartu Resmi KIP-K Kemdikbudristek</option>
-                  <option value="KHS / Transkrip">KHS / Transkrip Nilai Akademik</option>
-                  <option value="SKTM">Surat Keterangan Tidak Mampu (SKTM)</option>
-                  <option value="Dokumen Tambahan">Dokumen Tambahan</option>
+                  <optgroup label="── TAHAP 1: PENGAJUAN PENCAIRAN BEASISWA ──">
+                    {allCategoriesConfig
+                      .filter((c) => c.tahap === 1)
+                      .map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {c.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="── TAHAP 2: PELAPORAN KEAKTIFAN & LOMBA ──">
+                    {allCategoriesConfig
+                      .filter((c) => c.tahap === 2)
+                      .map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {c.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="── TAHAP 3: MONEV AKADEMIK & EKONOMI ──">
+                    {allCategoriesConfig
+                      .filter((c) => c.tahap === 3)
+                      .map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {c.title}
+                        </option>
+                      ))}
+                  </optgroup>
                 </select>
               </div>
 

@@ -633,6 +633,7 @@ export interface KipkDocument {
   userUniversity?: string;
   userYearOfEntry?: string;
   category: "Kartu KIP-K" | "SKTM" | "Keaktifan Ormawa" | "Kegiatan Webinar Soft Skill" | "Keikutsertaan Kompetisi" | "Kegiatan Semadiksi" | "KHS / Transkrip" | "Dokumen Tambahan";
+  tahap?: 1 | 2 | 3; // 1=Pencairan, 2=Pelaporan, 3=Monev
   title: string;
   fileName: string;
   fileSize?: string;
@@ -647,6 +648,26 @@ export interface KipkDocument {
   verifiedBy?: string;
 }
 
+// Mapping tahap KIPK ke kategori berkas yang relevan
+export const KIPK_TAHAP_CATEGORIES: Record<1 | 2 | 3, KipkDocument["category"][]> = {
+  1: ["Kartu KIP-K", "SKTM"],         // Tahap 1: Pengajuan Pencairan Beasiswa
+  2: ["Keaktifan Ormawa", "Kegiatan Webinar Soft Skill", "Keikutsertaan Kompetisi", "Kegiatan Semadiksi"], // Tahap 2: Pelaporan Keaktifan & Lomba
+  3: ["KHS / Transkrip", "Dokumen Tambahan"]  // Tahap 3: Monev Akademik & Ekonomi
+};
+
+export const KIPK_TAHAP_LABELS: Record<1 | 2 | 3, { title: string; desc: string; icon: string; color: string }> = {
+  1: { title: "Tahap 1: Pengajuan Pencairan Beasiswa", desc: "Berkas administrasi wajib untuk pencairan beasiswa KIP-K (Kartu KIP-K, SKTM).", icon: "payments", color: "purple" },
+  2: { title: "Tahap 2: Pelaporan Keaktifan & Lomba", desc: "Sertifikat dan SK keaktifan ormawa, webinar, kompetisi, dan kegiatan SEMADIKSI.", icon: "description", color: "emerald" },
+  3: { title: "Tahap 3: Monev Akademik & Ekonomi", desc: "Kartu Hasil Studi (KHS), transkrip, dan berkas penunjang kondisi ekonomi keluarga.", icon: "analytics", color: "blue" },
+};
+
+// Get tahap for a category automatically
+export function getTahapForCategory(cat: KipkDocument["category"]): 1 | 2 | 3 {
+  if ((KIPK_TAHAP_CATEGORIES[1] as string[]).includes(cat)) return 1;
+  if ((KIPK_TAHAP_CATEGORIES[2] as string[]).includes(cat)) return 2;
+  return 3;
+}
+
 export const INITIAL_KIPK_DOCUMENTS: KipkDocument[] = [
   {
     id: "doc-1",
@@ -657,6 +678,7 @@ export const INITIAL_KIPK_DOCUMENTS: KipkDocument[] = [
     userUniversity: "Universitas Nahdlatul Ulama Surabaya",
     userYearOfEntry: "2023",
     category: "Keaktifan Ormawa",
+    tahap: 2,
     title: "SK Kepengurusan BEM & Surat Tanda Aktif",
     fileName: "SK_BEM_2026.pdf",
     fileSize: "2.4 MB",
@@ -679,6 +701,7 @@ export const INITIAL_KIPK_DOCUMENTS: KipkDocument[] = [
     userUniversity: "Universitas Nahdlatul Ulama Surabaya",
     userYearOfEntry: "2023",
     category: "Kegiatan Webinar Soft Skill",
+    tahap: 2,
     title: "Sertifikat Webinar Leadership & Public Speaking",
     fileName: "Sertifikat_Webinar.jpg",
     fileSize: "1.8 MB",
@@ -701,6 +724,7 @@ export const INITIAL_KIPK_DOCUMENTS: KipkDocument[] = [
     userUniversity: "Universitas Nahdlatul Ulama Surabaya",
     userYearOfEntry: "2023",
     category: "Kegiatan Semadiksi",
+    tahap: 2,
     title: "Sertifikat LKMB & Temu Akbar Semadiksi",
     fileName: "Sertifikat_Semadiksi_Maba.pdf",
     fileSize: "3.1 MB",
@@ -723,6 +747,7 @@ export const INITIAL_KIPK_DOCUMENTS: KipkDocument[] = [
     userUniversity: "Universitas Nahdlatul Ulama Surabaya",
     userYearOfEntry: "2023",
     category: "Kartu KIP-K",
+    tahap: 1,
     title: "Kartu Resmi KIP Kuliah Kemdikbudristek",
     fileName: "Kartu_KIPK_AhmadFauzan.pdf",
     fileSize: "1.2 MB",
@@ -745,6 +770,7 @@ export const INITIAL_KIPK_DOCUMENTS: KipkDocument[] = [
     userUniversity: "Universitas Nahdlatul Ulama Surabaya",
     userYearOfEntry: "2023",
     category: "KHS / Transkrip",
+    tahap: 3,
     title: "Transkrip Nilai Akademik Semester Ganjil (IPK 3.82)",
     fileName: "Transkrip_Semester_1_AhmadFauzan.pdf",
     fileSize: "850 KB",
